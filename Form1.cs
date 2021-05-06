@@ -278,10 +278,15 @@ namespace LoadFoxProDBToSQL
                 var dataType = GetDataType(dataTypeString,maxLength, precision);
 
                 string primKey = "";
-                if (i == 1)
+                if (i == 1 && dataTable.Rows.Count > 1)
                 {
                         primKey = " PRIMARY KEY";
                         sqlColumnCreate = $"CREATE TABLE { tableName} ( \"{columName.ToString().Trim()}\"   { dataType}, ";
+                }
+                else if (i == 1 && dataTable.Rows.Count == 1)
+                {
+                    sqlColumnCreate = $"CREATE TABLE { tableName} ( \"{columName.ToString().Trim()}\"   { dataType}); ";
+
                 }
                 else if (i == dataTable.Rows.Count)
                     sqlColumnCreate = sqlColumnCreate + $" \"{columName.ToString().Trim()}\" {dataType}); ";
@@ -304,7 +309,6 @@ namespace LoadFoxProDBToSQL
                 var maxLength = row[13].ToString();
                 var precision = row[15].ToString();
                 var dataType = GetFoxProDataType(dataTypeString, maxLength, precision);
-
 
                 string primKey = "";
                 if (i == 1 && dataTable.Rows.Count > 1)
@@ -344,7 +348,7 @@ namespace LoadFoxProDBToSQL
                     dataType = "bytea";
                     break;
                 case "11":
-                    dataType = "Character(2)";
+                    dataType = "Character Varying(10)";
                     break;
                 case "8":
                     dataType = $"Character Varying(500)";
@@ -383,42 +387,40 @@ namespace LoadFoxProDBToSQL
             switch (dataType)
             {
                 case "129":
-                    dataType = $"VARCHAR(254)";
+                    dataType = $"M";
                     break;
                 case "133":
-                    //dataType = "Date";
-                    dataType = $"VARCHAR(254)";
+                    dataType = "Date";
+                   // dataType = $"VARCHAR(254)";
+                    break;
+                case "134":
+                    dataType = "VARCHAR(254)";
+                    break;
+                case "7":
+                case "135":
+                    dataType = "DateTime";
                     break;
                 case "20":
-                    dataType = "VARCHAR(254)";
+                    dataType = "Numeric";
                     break;
                 case "204":
                 case "128":
                     dataType = "Varbinary";
                     break;
                 case "11":
-                    dataType = "VARCHAR(1)";
+                    dataType = $"VARCHAR(254)";
                     break;
                 case "8":
                     dataType = $"VARCHAR(254)";
                     break;
                 case "6":
-                    dataType = "VARCHAR(254)";
-                    break;
-                case "7":
-                    dataType = "VARCHAR(254)";
-                    break;
-                case "134":
-                    dataType = "VARCHAR(254)";
-                    break;
-                case "135":
-                    dataType = "VARCHAR(254)";
+                    dataType = "Numeric";
                     break;
                 case "14":
-                    dataType = "VARCHAR(254)";
+                    dataType = "Numeric";
                     break;
                 case "5":
-                    dataType = "VARCHAR(254)";
+                    dataType = "Numeric";
                     break;
                 case "72":
                     dataType = $"VARCHAR(254)";
