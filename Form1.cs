@@ -195,6 +195,7 @@ namespace LoadFoxProDBToSQL
                             bulk.DestinationSchemaName = "public";
                             bulk.DestinationTableName = dataTable.TableName;
                             bulk.ColumnMappings = BuildColumnMapping(dataTable);
+                            bulk.AutoTruncate = true;
                          
                             bulk.BulkInsert(dataTable);
 
@@ -302,22 +303,22 @@ namespace LoadFoxProDBToSQL
                 var dataTypeString = row[11].ToString();
                 var maxLength = row[13].ToString();
                 var precision = row[15].ToString();
-                var dataType = GetDataType(dataTypeString, maxLength, precision);
+                var dataType = GetFoxProDataType(dataTypeString, maxLength, precision);
 
 
                 string primKey = "";
                 if (i == 1 && dataTable.Rows.Count > 1)
                 {
-                    sqlSelect = $"Select CAST({columName.ToString().Trim()} as VARCHAR) as  {columName.ToString()} , ";
+                    sqlSelect = $"Select CAST({columName.ToString().Trim()} as {dataType}) as  {columName.ToString()} , ";
                 }
                 else if (i == 1 && dataTable.Rows.Count == 1)
                 {
-                    sqlSelect = $"Select CAST({columName.ToString().Trim()}) AS VARCHAR) as  {columName.ToString()} FROM {tableName.ToString()} ";
+                    sqlSelect = $"Select CAST({columName.ToString().Trim()} AS {dataType}) as  {columName.ToString()} FROM {tableName.ToString()} ";
                 }
                 else if (i == dataTable.Rows.Count)
-                    sqlSelect = sqlSelect + $" CAST({columName.ToString().Trim()})  as VARCHAR) as {columName.ToString()} FROM {tableName.ToString()}";
+                    sqlSelect = sqlSelect + $" CAST({columName.ToString().Trim()}  as {dataType}) as {columName.ToString()} FROM {tableName.ToString()}";
                 else
-                    sqlSelect = sqlSelect + $" CAST({columName.ToString().Trim()}) as VARCHAR)  as {columName.ToString()}, ";
+                    sqlSelect = sqlSelect + $" CAST({columName.ToString().Trim()} as {dataType})  as {columName.ToString()}, ";
                 i++;
             }
             return sqlSelect;
@@ -329,35 +330,33 @@ namespace LoadFoxProDBToSQL
             switch(dataType)
             {
                 case "129":
-                    dataType = $"Character Varying(250)";
-                    break;
-                case "133":
-                    //dataType = "Date";
-                    dataType = $"Character Varying(254)";
-                    break;
-                case "20":
-                    dataType = "Numeric(11,2)";
-                    break;
-                case "128":
-                    dataType = "Varbinary";
-                    break;
-                case "11":
-                    dataType = "Character(1)";
-                    break;
-                case "8":
-                    dataType = $"Character Varying(254)";
-                    break;
-                case "6":
-                    dataType = "NUMERIC(11, 2)";
+                    dataType = $"Text";
                     break;
                 case "7":
-                    dataType = "Datetime";
+                case "133":
+                    dataType = "Date";
+                    //dataType = $"Character Varying(MAX)";
+                    break;
+                case "20":
+                    dataType = "bigint";
+                    break;
+                case "128":
+                    dataType = "bytea";
+                    break;
+                case "11":
+                    dataType = "Character(2)";
+                    break;
+                case "8":
+                    dataType = $"Character Varying(500)";
+                    break;
+                case "6":
+                    dataType = "money";
                     break;
                 case "134":
-                    dataType = "Time";
+                    dataType = "Timestamp";
                     break;
                 case "135":
-                    dataType = "DateTime";
+                    dataType = "Timestamp";
                     break;
                 case "14":
                     dataType = "NUMERIC(19, 4)";
@@ -366,10 +365,66 @@ namespace LoadFoxProDBToSQL
                     dataType = "NUMERIC(19,2)";
                     break;
                 case "72":
-                    dataType = $"Character Varying(254)";
+                    dataType = $"UUID";
                     break;
                 default:
-                    dataType = "Character Varying(254)";
+                    dataType = "Character Varying(500)";
+                    break;
+            };
+
+            return dataType;
+
+        }
+
+        private static string GetFoxProDataType(string dataType, string maxLength, string precision = "0")
+        {
+            //254 is the max length of a column on FoxPro
+
+            switch (dataType)
+            {
+                case "129":
+                    dataType = $"VARCHAR(254)";
+                    break;
+                case "133":
+                    //dataType = "Date";
+                    dataType = $"VARCHAR(254)";
+                    break;
+                case "20":
+                    dataType = "VARCHAR(254)";
+                    break;
+                case "204":
+                case "128":
+                    dataType = "Varbinary";
+                    break;
+                case "11":
+                    dataType = "VARCHAR(1)";
+                    break;
+                case "8":
+                    dataType = $"VARCHAR(254)";
+                    break;
+                case "6":
+                    dataType = "VARCHAR(254)";
+                    break;
+                case "7":
+                    dataType = "VARCHAR(254)";
+                    break;
+                case "134":
+                    dataType = "VARCHAR(254)";
+                    break;
+                case "135":
+                    dataType = "VARCHAR(254)";
+                    break;
+                case "14":
+                    dataType = "VARCHAR(254)";
+                    break;
+                case "5":
+                    dataType = "VARCHAR(254)";
+                    break;
+                case "72":
+                    dataType = $"VARCHAR(254)";
+                    break;
+                default:
+                    dataType = "VARCHAR(254)";
                     break;
             };
 
