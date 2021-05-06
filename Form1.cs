@@ -13,13 +13,16 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Npgsql;
+using NpgsqlTypes;
+using Z.BulkOperations;
 
 namespace LoadFoxProDBToSQL
 {
     public partial class Form1 : Form
     {
         string _path;
-        SqlConnection _sqlConnection;
+        NpgsqlConnection _sqlConnection;
         string _masterConnString;
         string _newConnString;
         
@@ -53,10 +56,10 @@ namespace LoadFoxProDBToSQL
             Stopwatch stopwatch = new Stopwatch();
             Stopwatch stopwatch2 = new Stopwatch();
             stopwatch.Start();
-            lbMessages.Items.Add(@"Processing started at {DateTime.Now}");
-            var masterConnString = $"Server = {sqlServerName.Text}; Database = master; User Id ={sqlUserName.Text}; Password ={sqlPassword.Text};";
+            lbMessages.Items.Add($"Processing started at {DateTime.Now}");
+            var masterConnString = $"Server={sqlServerName.Text};Database=postgres;Port=5432;Username={sqlUserName.Text};Password={sqlPassword.Text};SslMode=Require;";
             _masterConnString = masterConnString;
-            _newConnString = $"Server ={sqlServerName.Text}; Database = {newSQLDBName.Text}; User Id ={sqlUserName.Text}; Password ={sqlPassword.Text};";
+            _newConnString = $"Server={sqlServerName.Text};Database={newSQLDBName.Text};Port=5432;Username={sqlUserName.Text};Password={sqlPassword.Text};SslMode=Require;";
             bool sqlSuccess = ConnectAndCreateSQLDB(_masterConnString);
 
             var tableList = ConnectToDBFGetTableList();
@@ -70,11 +73,12 @@ namespace LoadFoxProDBToSQL
         {
             bool success = false; 
             //connect to SQL First
-            SqlConnection sqlConn = new SqlConnection(connString);
-            _sqlConnection = sqlConn;
+
+            Npgsql.NpgsqlConnection connection = new Npgsql.NpgsqlConnection(connString);
+            _sqlConnection = connection;
             try
             {
-                sqlConn.Open();
+                connection.Open();
 
             }
             catch (Exception ex)
@@ -84,7 +88,7 @@ namespace LoadFoxProDBToSQL
             try
             {
                 //Create the DB to house the DB data
-                SqlCommand sqlCreateTableCmd = new SqlCommand($"CREATE DATABASE {newSQLDBName.Text.Trim()}", sqlConn);
+                NpgsqlCommand sqlCreateTableCmd = new NpgsqlCommand($"CREATE DATABASE \"{newSQLDBName.Text.Trim()}\";", connection);
                 sqlCreateTableCmd.ExecuteNonQuery();
                 success = true;
             }
@@ -93,12 +97,12 @@ namespace LoadFoxProDBToSQL
                 lbMessages.Items.Add($"Error occurred creating new DB {newSQLDBName.Text}. Ex:{ex.Message}");
 
             }
-            sqlConn.Close();
-            _newConnString = $"Server ={sqlServerName.Text}; Database = {newSQLDBName.Text}; User Id ={sqlUserName.Text}; Password ={sqlPassword.Text};";
-            sqlConn.ConnectionString = _newConnString;
+            connection.Close();
+            _newConnString = $"Server ={sqlServerName.Text}; Database = {newSQLDBName.Text}; User Id ={sqlUserName.Text}; Password ={sqlPassword.Text};Ssl Mode=Require;";
+            connection.ConnectionString = _newConnString;
             //make sure we can connect to the new db
-            sqlConn.Open();
-            sqlConn.Close();
+            connection.Open();
+            connection.Close();
 
             return success;
         }
@@ -127,8 +131,8 @@ namespace LoadFoxProDBToSQL
                     tableData.Load(dataReader);
                     tableData.TableName = tableName;
 
-                    CreateSqlServerTable(columns, _newConnString, tableName);
-                    InsertSqlServerData(tableData, _newConnString);
+                    CreateDestinationTable(columns, _newConnString, tableName);
+                    InsertPostgresData(tableData, _newConnString);
                 }
                 catch(Exception ex)
                 {
@@ -140,10 +144,10 @@ namespace LoadFoxProDBToSQL
             return tables;
         }
 
-        private void CreateSqlServerTable(DataTable dataTable, string connString, string tableName)
+        private void CreateDestinationTable(DataTable dataTable, string connString, string tableName)
         {
-            lbMessages.Items.Add("Create table Started for Table: {dataTable.TableName}");
-            SqlConnection conn = new SqlConnection();
+            lbMessages.Items.Add($"Create table Started for Table: {dataTable.TableName}");
+            NpgsqlConnection conn = new NpgsqlConnection();
             conn.ConnectionString = connString;
             conn.Open();
             string createSql = "";
@@ -152,7 +156,7 @@ namespace LoadFoxProDBToSQL
                 using (conn)
                 {
                     createSql = BuildCreateStatement(dataTable, tableName);
-                    SqlCommand createCmd = conn.CreateCommand();
+                    NpgsqlCommand createCmd = conn.CreateCommand();
                     createCmd.CommandText = createSql;
                     createCmd.ExecuteNonQuery();
                     createCmd.Dispose();
@@ -170,30 +174,29 @@ namespace LoadFoxProDBToSQL
             conn.Dispose();
             lbMessages.Items.Add($"Table {tableName} created successfully.");
         }
-        private void InsertSqlServerData(DataTable dataTable, string connString)
+        private void InsertPostgresData(DataTable dataTable, string connString)
         {
             lbMessages.Items.Add("Insert Data started for Table: " + dataTable.TableName);
 
-            SqlConnection conn = new SqlConnection(connString);
+            NpgsqlConnection conn = new NpgsqlConnection(connString);
             conn.Open();
             using (conn)
             {
                 using (dataTable)
                 {
-                    string sqlSelect = String.Format("SELECT * FROM {0}", dataTable);
 
-                    SqlBulkCopy bulkCopy = new SqlBulkCopy(conn);
-                    using (bulkCopy)
+                    if (conn.State == ConnectionState.Closed)
+                        conn.Open();
+                    using (var bulk = new BulkOperation(conn))
                     {
                         try
                         {
-
-                            if (conn.State == ConnectionState.Closed)
-                                conn.Open();
-                            bulkCopy.DestinationTableName = dataTable.TableName;
-                            bulkCopy.BatchSize = 1000;
-                            bulkCopy.BulkCopyTimeout = 360;
-                            bulkCopy.WriteToServer(dataTable);
+                            bulk.Provider = ProviderType.PostgreSql;
+                            bulk.DestinationSchemaName = "public";
+                            bulk.DestinationTableName = dataTable.TableName;
+                            bulk.ColumnMappings = BuildColumnMapping(dataTable);
+                         
+                            bulk.BulkInsert(dataTable);
 
                             lbMessages.Items.Add("Insert Data Completed Successfully for Table: " + dataTable.TableName);
                         }
@@ -208,6 +211,56 @@ namespace LoadFoxProDBToSQL
                     }
                 }
             }
+        }
+
+        private static List<ColumnMapping> BuildColumnMapping(DataTable dt)
+        {
+            List<ColumnMapping> mappings = new List<ColumnMapping>();
+
+            foreach(var col in dt.Columns)
+            {
+                var dataTypeName = col.GetType().Name;
+                //NpgsqlDbType dbType;
+
+                //switch (dataTypeName)
+                //{
+                //    case "System.Boolean":
+                //        dbType = NpgsqlDbType.Boolean;
+                //        break;
+                //    case "System.Byte":
+                //        dbType = NpgsqlDbType.Smallint;
+                //        break;
+                //    case "System.Decimal":
+                //        dbType = NpgsqlDbType.Numeric;
+                //        break;
+                //    case "System.Double":
+                //        dbType = NpgsqlDbType.Double;
+                //        break;
+                //    case "System.Int32":
+                //    case "System.Integer":
+                //        dbType = NpgsqlDbType.Integer;
+                //        break;
+                //    case "System.Int16":
+                //        dbType = NpgsqlDbType.Smallint;
+                //        break;
+                //    case "System.String":
+                //        dbType = NpgsqlDbType.Text;
+                //        break;
+                //    case "System.Date":
+                //        dbType = NpgsqlDbType.Date;
+                //        break;
+                //    case "System.DateTime":
+                //        dbType = NpgsqlDbType.Timestamp;
+                //        break;
+                //    default:
+                //        dbType = NpgsqlDbType.Text;
+                //        break;
+                //}
+
+                ColumnMapping colMap = new ColumnMapping(col.ToString() );
+                mappings.Add(colMap);
+            }
+            return mappings;
         }
 
         private static string BuildCreateStatement(DataTable dataTable, string tableName)
@@ -227,12 +280,12 @@ namespace LoadFoxProDBToSQL
                 if (i == 1)
                 {
                         primKey = " PRIMARY KEY";
-                        sqlColumnCreate = "CREATE TABLE " + tableName + " ( srcId INT PRIMARY KEY IDENTITY (1, 1), [" + columName.ToString().Trim() + "] " + dataType + ", ";
+                        sqlColumnCreate = $"CREATE TABLE { tableName} ( \"{columName.ToString().Trim()}\"   { dataType}, ";
                 }
                 else if (i == dataTable.Rows.Count)
-                    sqlColumnCreate = sqlColumnCreate + " [" + columName.ToString().Trim() + "] " + dataType + "); ";
+                    sqlColumnCreate = sqlColumnCreate + $" \"{columName.ToString().Trim()}\" {dataType}); ";
                 else
-                    sqlColumnCreate = sqlColumnCreate + " [" + columName.ToString().Trim() + "] " + dataType + ", ";
+                    sqlColumnCreate = sqlColumnCreate + $" \"{columName.ToString().Trim()}\" {dataType}, ";
                 i++;
             }
             return sqlColumnCreate;
@@ -251,15 +304,20 @@ namespace LoadFoxProDBToSQL
                 var precision = row[15].ToString();
                 var dataType = GetDataType(dataTypeString, maxLength, precision);
 
+
                 string primKey = "";
-                if (i == 1)
+                if (i == 1 && dataTable.Rows.Count > 1)
                 {
-                    sqlSelect = $"Select  cast(null as integer) as srcId, Cast( {columName.ToString().Trim()} as {dataType.ToString()}) as {columName.ToString()} , ";
+                    sqlSelect = $"Select CAST({columName.ToString().Trim()} as VARCHAR) as  {columName.ToString()} , ";
+                }
+                else if (i == 1 && dataTable.Rows.Count == 1)
+                {
+                    sqlSelect = $"Select CAST({columName.ToString().Trim()}) AS VARCHAR) as  {columName.ToString()} FROM {tableName.ToString()} ";
                 }
                 else if (i == dataTable.Rows.Count)
-                    sqlSelect = sqlSelect + $" Cast({columName.ToString().Trim()} as {dataType}) as {columName.ToString()} FROM {tableName.ToString()}";
+                    sqlSelect = sqlSelect + $" CAST({columName.ToString().Trim()})  as VARCHAR) as {columName.ToString()} FROM {tableName.ToString()}";
                 else
-                    sqlSelect = sqlSelect + $" Cast({columName.ToString().Trim()} as {dataType} ) as {columName.ToString()}, ";
+                    sqlSelect = sqlSelect + $" CAST({columName.ToString().Trim()}) as VARCHAR)  as {columName.ToString()}, ";
                 i++;
             }
             return sqlSelect;
@@ -271,51 +329,56 @@ namespace LoadFoxProDBToSQL
             switch(dataType)
             {
                 case "129":
-                    dataType = $"Varchar(250)";
+                    dataType = $"Character Varying(250)";
                     break;
                 case "133":
                     //dataType = "Date";
-                    dataType = $"Varchar(254)";
+                    dataType = $"Character Varying(254)";
                     break;
                 case "20":
-                    dataType = "Integer";
+                    dataType = "Numeric(11,2)";
                     break;
                 case "128":
                     dataType = "Varbinary";
                     break;
                 case "11":
-                    dataType = "char(1)";
+                    dataType = "Character(1)";
                     break;
                 case "8":
-                    dataType = $"nvarchar(254)";
+                    dataType = $"Character Varying(254)";
                     break;
                 case "6":
-                    dataType = "decimal(19, 2)";
+                    dataType = "NUMERIC(11, 2)";
                     break;
                 case "7":
                     dataType = "Datetime";
                     break;
                 case "134":
-                    dataType = "time";
+                    dataType = "Time";
                     break;
                 case "135":
                     dataType = "DateTime";
                     break;
                 case "14":
-                    dataType = "Decimal(19, 4)";
+                    dataType = "NUMERIC(19, 4)";
                     break;
                 case "5":
-                    dataType = "Decimal(19,2)";
+                    dataType = "NUMERIC(19,2)";
                     break;
                 case "72":
-                    dataType = $"varchar(254)";
+                    dataType = $"Character Varying(254)";
                     break;
                 default:
-                    dataType = "varchar(254)";
+                    dataType = "Character Varying(254)";
                     break;
             };
 
             return dataType;
+
+        }
+
+        private void dbfPath_TextChanged(object sender, EventArgs e)
+        {
 
         }
     }
