@@ -295,7 +295,7 @@ namespace LoadFoxProDBToSQL
                         conn = new NpgsqlConnection(connString);
                         conn.Open();
                     }
-                    var setEncoding = "set client_encoding = 'WIN1252'";
+                    var setEncoding = "set client_encoding = 'utf8'";
                     var command = conn.CreateCommand();
                     command.CommandText = setEncoding;
                     command.ExecuteNonQuery();
