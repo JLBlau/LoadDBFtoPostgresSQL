@@ -357,11 +357,31 @@ namespace LoadFoxProDBToSQL
                 var ordinal = int.Parse(row[6].ToString());
 
 
-                colMap = new ColumnMapping
-                { 
-                    SourceName = columName.ToString(),
-                    DestinationName = columName.ToString().ToLower()
-                };
+                colMap = new ColumnMapping();
+                
+                if(dataType == typeof(System.String))
+                {
+                    colMap.SourceName = columName.ToString();
+                    colMap.DestinationName = columName.ToString().ToLower();
+                    colMap.DefaultValueResolution = DefaultValueResolutionType.Null;
+                    colMap.DestinationExpression =  c => new { }
+                    //    x =>
+                    //{
+                    //    var r = (IDataReader)x;
+                    //    string value = r.GetString(r.GetOrdinal($"{columName.ToString()}"));
+                    //    var bytes = Encoding.UTF8.GetBytes(value);
+                    //    string result = Encoding.ASCII.GetString(bytes).Trim().Replace('\0', ' ').TrimEnd('\0');
+                    //    return result;
+                    //};
+
+                }
+                else
+                {
+                    colMap.SourceName = columName.ToString();
+                    colMap.DestinationName = columName.ToString().ToLower();
+                    colMap.DefaultValueResolution = DefaultValueResolutionType.Null;
+
+                }
                 mappings.Add(colMap);
             }
             return mappings;
