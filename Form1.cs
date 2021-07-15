@@ -9,7 +9,9 @@ using System.Data.SqlTypes;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Drawing;
+using System.Dynamic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -68,7 +70,7 @@ namespace LoadFoxProDBToSQL
             lbMessages.Items.Add($"Processing started at {DateTime.Now}");
             var masterConnString = $"Server={serverName.Text};Database=postgres;Port=5432;Username={sqlUserName.Text};Password={sqlPassword.Text};SslMode=Require;";
             _masterConnString = masterConnString;
-            _newConnString = $"Server={serverName.Text};Database={newSQLDBName.Text};Port=5432;Username={sqlUserName.Text};Password={sqlPassword.Text};SslMode=Require;ClientEncoding=\"sql-ASCIIEncoding\";";
+            _newConnString = $"Server={serverName.Text};Database={newSQLDBName.Text};Port=5432;Username={sqlUserName.Text};Password={sqlPassword.Text};SslMode=Require;";
 
             if (dbaseButton1.Checked)
                 //_dbfConnString = $"Provider=Microsoft.ACE.OLEDB.16.0;Data Source={dbfPath.Text};Extended Properties=dBASE IV;User ID=Admin";
@@ -295,7 +297,7 @@ namespace LoadFoxProDBToSQL
                         conn = new NpgsqlConnection(connString);
                         conn.Open();
                     }
-                    var setEncoding = "set client_encoding = 'utf8'";
+                    var setEncoding = "set client_encoding = 'UTF8";
                     var command = conn.CreateCommand();
                     command.CommandText = setEncoding;
                     command.ExecuteNonQuery();
@@ -305,13 +307,13 @@ namespace LoadFoxProDBToSQL
                         try
                         {
                             bulk.Connection = conn;
-                            
+                            bulk.AutoMap = AutoMapType.ByName;
                             bulk.BatchSize = 10000;
                             bulk.BatchTimeout = 360;
                             bulk.Provider = ProviderType.PostgreSql;
                             bulk.DestinationSchemaName = "public";
                             bulk.DestinationTableName = tableName.ToLower();
-
+                            bulk.CaseSensitive = CaseSensitiveType.DestinationInsensitive;
                             bulk.ColumnMappings = BuildColumnMapping(columns);
                             bulk.AutoTruncate = true;
                             bulk.DataSource = dataReader;
@@ -329,7 +331,6 @@ namespace LoadFoxProDBToSQL
                             lbMessages.Items.Add("SQL Exception:" + ex.Message + ", Stack Trace:" + ex.StackTrace);
                         }
                         catch (Exception ex2)
-
                         {
                             lbMessages.Items.Add($"LogDump:{sb.ToString()}");
                             lbMessages.Items.Add("Exception:" + ex2.Message + ", Stack Trace:" + ex2.StackTrace);
@@ -355,30 +356,30 @@ namespace LoadFoxProDBToSQL
                 var columName = row[3].ToString();
                 Type dataType = GetDotNetDataType(row[11].ToString());
                 var ordinal = int.Parse(row[6].ToString());
-
-
-                colMap = new ColumnMapping();
                 
                 if(dataType == typeof(System.String))
                 {
+                    colMap = new ColumnMapping();
                     colMap.SourceName = columName.ToString();
-                    colMap.DestinationName = columName.ToString().ToLower();
-                    colMap.DefaultValueResolution = DefaultValueResolutionType.Null;
-                    colMap.DestinationExpression =  c => new { }
-                    //    x =>
-                    //{
-                    //    var r = (IDataReader)x;
-                    //    string value = r.GetString(r.GetOrdinal($"{columName.ToString()}"));
-                    //    var bytes = Encoding.UTF8.GetBytes(value);
-                    //    string result = Encoding.ASCII.GetString(bytes).Trim().Replace('\0', ' ').TrimEnd('\0');
-                    //    return result;
-                    //};
+                    colMap.DestinationName = columName.ToString();
+                    //colMap.FormulaInsert = $"CASE WHEN LTRIM(RTRIM(REPLACE(REPLACE(StagingTable.{columName},  char(0), ''), 0x00, ''))) = '' THEN NULL ELSE LTRIM(RTRIM(REPLACE(REPLACE(StagingTable.{columName},  char(0), ''), 0x00, '')) END";
+                    colMap.SourceValueFactory = x => {
+                        var r = (IDataReader)x;
+                        var dtable = dataType;
+                        var stringValue = r.GetString(r.GetOrdinal($"{columName}"));
+                        var value = stringValue.Replace(Convert.ToChar(0x00).ToString(), string.Empty).Replace('\u0000'.ToString(), "");
+                        //var bytes = Encoding.UTF8.GetBytes(stringValue).Where(b => b != 0).ToArray();
+                        //var value = Encoding.ASCII.GetString(bytes).TrimEnd();
+                        return value;
+                    };
 
                 }
                 else
                 {
+
+                    colMap = new ColumnMapping();
                     colMap.SourceName = columName.ToString();
-                    colMap.DestinationName = columName.ToString().ToLower();
+                    colMap.DestinationName = columName.ToString();
                     colMap.DefaultValueResolution = DefaultValueResolutionType.Null;
 
                 }
@@ -587,9 +588,11 @@ namespace LoadFoxProDBToSQL
                 case "11":
                 case "72":
                 case "129":
-                case "130":
                 case "134":
                     dataType = $"Char({maxLength})";
+                    break;
+                case "130":
+                    dataType = "MEMO";
                     break;
                 case "7":
                 case "133":
