@@ -24,12 +24,18 @@ namespace LoadFoxProDBToSQL
     public partial class Form1 : Form
     {
         string _path;
-        NpgsqlConnection _sqlConnection;
+        //NpgsqlConnection _pgsqlConnection;
+        //SqlConnection _sqlConnection;
+        DbConnection _mdbConnection;
+        DbConnection _dbConnection;
+        OleDbConnection _dbfConnection;
         string _masterConnString;
         string _newConnString;
         string _dbfConnString;
         static bool _isFoxPro;
         static bool _isDbase;
+        static bool _isSqlServer;
+        static bool _isPostgres;
         public Form1()
         {
             InitializeComponent();
@@ -53,12 +59,17 @@ namespace LoadFoxProDBToSQL
         {
             if (!dbaseButton1.Checked && !foxProButton1.Checked)
                 MessageBox.Show("DBF Type is Required.");
+            if (!serverButton1.Checked && !serverButton2.Checked)
+                MessageBox.Show("Server Type is Required");
             else
             {
                 _isDbase = dbaseButton1.Checked;
                 _isFoxPro = foxProButton1.Checked;
+                _isSqlServer = serverButton1.Checked;
+                _isPostgres = serverButton2.Checked;
                 LoadDBF();
             }
+
         }
 
         private void LoadDBF()
@@ -68,9 +79,20 @@ namespace LoadFoxProDBToSQL
             Stopwatch stopwatch2 = new Stopwatch();
             stopwatch.Start();
             lbMessages.Items.Add($"Processing started at {DateTime.Now}");
-            var masterConnString = $"Server={serverName.Text};Database=postgres;Port=5432;Username={sqlUserName.Text};Password={sqlPassword.Text};SslMode=Require;";
-            _masterConnString = masterConnString;
-            _newConnString = $"Server={serverName.Text};Database={newSQLDBName.Text};Port=5432;Username={sqlUserName.Text};Password={sqlPassword.Text};SslMode=Require;";
+            if (serverButton1.Checked)
+            {
+                var masterConnString = $"Server = {serverName.Text}; Database = master; User Id ={sqlUserName.Text}; Password ={sqlPassword.Text};";
+                _masterConnString = masterConnString;
+                _newConnString = $"Server ={serverName.Text}; Database = {newSQLDBName.Text}; User Id ={sqlUserName.Text}; Password ={sqlPassword.Text};";
+
+            }
+            else if(serverButton2.Checked)
+            {
+                var masterConnString = $"Server={serverName.Text};Database=postgres;Port=5432;Username={sqlUserName.Text};Password={sqlPassword.Text};SslMode=Require;";
+                _masterConnString = masterConnString;
+                _newConnString = $"Server={serverName.Text};Database={newSQLDBName.Text};Port=5432;Username={sqlUserName.Text};Password={sqlPassword.Text};SslMode=Require;";
+
+            }
 
             if (dbaseButton1.Checked)
                 //_dbfConnString = $"Provider=Microsoft.ACE.OLEDB.16.0;Data Source={dbfPath.Text};Extended Properties=dBASE IV;User ID=Admin";
@@ -78,8 +100,11 @@ namespace LoadFoxProDBToSQL
             else
                 _dbfConnString = $"Provider=vfpoledb;Data Source={dbfPath.Text};CollatingSequence=general;";
 
-
-            bool sqlSuccess = ConnectAndCreateSQLDB(_masterConnString);
+            bool sqlSuccess;
+            if (serverButton1.Checked)
+                sqlSuccess = ConnectAndCreateSQLDB(_masterConnString);
+            else
+                sqlSuccess = ConnectAndCreatePostgresDB(_masterConnString);
 
             var tableList = ConnectToDBFGetTableList();
 
@@ -90,11 +115,49 @@ namespace LoadFoxProDBToSQL
 
         private bool ConnectAndCreateSQLDB(string connString)
         {
+            bool success = false;
+            //connect to SQL First
+            SqlConnection sqlConn = new SqlConnection(connString);
+            _mdbConnection = sqlConn;
+            try
+            {
+                sqlConn.Open();
+
+            }
+            catch (Exception ex)
+            {
+                lbMessages.Items.Add($"Cannot open connection to {serverName.Text}. Ex: {ex.Message}");
+            }
+            try
+            {
+                //Create the DB to house the DB data
+                SqlCommand sqlCreateTableCmd = new SqlCommand($"CREATE DATABASE {newSQLDBName.Text.Trim()}", sqlConn);
+                sqlCreateTableCmd.ExecuteNonQuery();
+                success = true;
+            }
+            catch (Exception ex)
+            {
+                lbMessages.Items.Add($"Error occurred creating new DB {newSQLDBName.Text}. Ex:{ex.Message}");
+
+            }
+            sqlConn.Close();
+            _newConnString = $"Server ={serverName.Text}; Database = {newSQLDBName.Text}; User Id ={sqlUserName.Text}; Password ={sqlPassword.Text};";
+            sqlConn.ConnectionString = _newConnString;
+            //make sure we can connect to the new db
+            sqlConn.Open();
+            _dbConnection = sqlConn;
+            sqlConn.Close();
+
+            return success;
+        }
+
+        private bool ConnectAndCreatePostgresDB(string connString)
+        {
             bool success = false; 
             //connect to SQL First
 
             Npgsql.NpgsqlConnection connection = new Npgsql.NpgsqlConnection(connString);
-            _sqlConnection = connection;
+            _mdbConnection = connection;
             try
             {
                 connection.Open();
@@ -121,6 +184,7 @@ namespace LoadFoxProDBToSQL
             connection.ConnectionString = _newConnString;
             //make sure we can connect to the new db
             connection.Open();
+            _dbConnection = connection;
             connection.Close();
 
             return success;
@@ -144,6 +208,7 @@ namespace LoadFoxProDBToSQL
                 {
                     var conn1 = new OleDbConnection(_dbfConnString);
                     conn1.Open();
+                    _dbfConnection = conn1;
 
                     var tableName = t[2].ToString();
                         DataTable columns = new DataTable();
@@ -154,8 +219,17 @@ namespace LoadFoxProDBToSQL
                             comm.CommandText = BuildSelectStatement(columns, tableName);
                             comm.CommandType = CommandType.Text;
                             var dataReader = comm.ExecuteReader();
-                            CreateDestinationTable(columns, _newConnString, tableName);
-                            InsertPostgresData(dataReader, columns,_newConnString, tableName);
+                        if (_isPostgres)
+                        {
+                            CreatePostgresDestinationTable(columns, _newConnString, tableName);
+                            InsertData(dataReader, columns, _newConnString, tableName);
+                        }
+                        else
+                        {
+                            CreateSqlServerDestinationTable(columns,_newConnString, tableName);
+                            InsertData(dataReader, columns, _newConnString, tableName);
+                        }
+                            
                         }
                         conn1.Close();
                         conn1.Dispose();
@@ -180,7 +254,7 @@ namespace LoadFoxProDBToSQL
             
         }
 
-        private void CreateDestinationTable(DataTable columnsDataTable, string connString, string tableName)
+        private void CreatePostgresDestinationTable(DataTable columnsDataTable, string connString, string tableName)
         {
             lbMessages.Items.Add($"Create table Started for Table: {tableName}");
             NpgsqlConnection conn = new NpgsqlConnection();
@@ -200,7 +274,7 @@ namespace LoadFoxProDBToSQL
                 {
                     using (conn)
                     {
-                        createSql = BuildCreateStatement(columnsDataTable, tableName);
+                        createSql = BuildPostgresCreateStatement(columnsDataTable, tableName);
                         NpgsqlCommand createCmd = conn.CreateCommand();
                         createCmd.CommandText = createSql;
                         createCmd.ExecuteNonQuery();
@@ -220,87 +294,146 @@ namespace LoadFoxProDBToSQL
             }
             lbMessages.Items.Add($"Table {tableName} created successfully.");
         }
-        //private void InsertPostgresData(DataTable dataTable, string connString)
-        //{
-        //    lbMessages.Items.Add("Insert Data started for Table: " + dataTable.TableName);
 
-        //    NpgsqlConnection conn = new NpgsqlConnection(connString);
-        //    StringBuilder sb = new StringBuilder();
-        //    conn.Open();
-        //    using (conn)
-        //    {
-        //        using (dataTable)
-        //        {
+        private void CreateSqlServerDestinationTable(DataTable dataTable, string connString, string tableName)
+        {
+            var conn = _dbConnection;
+            lbMessages.Items.Add("Create table Started for Table: {dataTable.TableName}");
+            if (conn.State != ConnectionState.Open)
+            {
+                conn.ConnectionString =_newConnString;
+                conn.Open();
+            }
+            string createSql = "";
+            try
+            {
+                using (_dbConnection)
+                {
+                    createSql = BuildSqlServerCreateStatement(dataTable, tableName);
+                    SqlCommand createCmd = (SqlCommand)_dbConnection.CreateCommand();
+                    createCmd.CommandText = createSql;
+                    createCmd.ExecuteNonQuery();
+                    createCmd.Dispose();
+                }
+            }
+            catch (SqlException ex)
+            {
+                lbMessages.Items.Add("Sql Exception:" + ex.Message + ", Stack Trace:" + ex.StackTrace + " for tablename: " + tableName + " sql statement " + createSql);
+            }
+            catch (Exception ex2)
+            {
+                lbMessages.Items.Add("Create Table Error:" + ex2.Message + ", Stack Trace:" + ex2.StackTrace + " for tablename: " + tableName + " sql statement " + createSql);
+            }
+            conn.Close();
+            conn.Dispose();
+            lbMessages.Items.Add($"Table {tableName} created successfully.");
+        }
 
-        //            if (conn.State != ConnectionState.Open)
-        //            {
-        //                conn.Close();
-        //                conn.Dispose();
-        //                conn = new NpgsqlConnection(connString);
-        //                conn.Open();
-        //            }
-        //            var setEncoding = "set client_encoding = 'WIN1252'";
-        //            var command = conn.CreateCommand();
-        //            command.CommandText = setEncoding;
-        //            command.ExecuteNonQuery();
-                    
-        //            using (var bulk = new BulkOperation(conn))
-        //            {
-        //                try
-        //                {
-        //                    bulk.Provider = ProviderType.PostgreSql;
-        //                    bulk.DestinationSchemaName = "public";
-        //                    bulk.DestinationTableName = dataTable.TableName.ToLower();
-        //                    bulk.ColumnMappings = BuildColumnMapping(dataTable);
-        //                    bulk.AutoMapOutputIdentity = true;
-        //                    bulk.AutoTruncate = true;
-                            
-        //                    bulk.Log = s => sb.AppendLine(s);
-                         
-        //                    bulk.BulkInsert(dataTable);
+        private static string BuildSqlServerCreateStatement(DataTable dataTable, string tableName)
+        {
 
-        //                    lbMessages.Items.Add("Insert Data Completed Successfully for Table: " + dataTable.TableName);
-        //                }
-        //                catch (SqlException ex)
-        //                {
-        //                    lbMessages.Items.Add("SQL Exception:" + ex.Message + ", Stack Trace:" + ex.StackTrace);
-        //                }
-        //                catch (Exception ex2)
-                        
-        //                {
-        //                    lbMessages.Items.Add("Exception:" + ex2.Message + ", Stack Trace:" + ex2.StackTrace);
-        //                }
-        //                conn.Close();
-        //                conn.Dispose();
-                        
-        //            }
-        //        }
-        //        lbMessages.Items.Add($"StringBuilderLog for DataTable:{dataTable.TableName} {sb.ToString()}");
-        //        dataTable.Clear();
-        //        dataTable.Dispose();
-        //    }
-        //}
+            int i = 1;
+            string sqlColumnCreate = "";
+            foreach (var row in dataTable.AsEnumerable().OrderBy(x => x.ItemArray[6]))
+            {
+                var columName = row[3].ToString();
+                var dataTypeString = row[11].ToString();
+                var maxLength = row[13].ToString();
+                var precision = row[15].ToString();
+                var dataType = GetSqlServerDataType(dataTypeString, maxLength, precision);
 
-        private void InsertPostgresData(OleDbDataReader dataReader, DataTable columns, string connString, string tableName)
+                string primKey = "";
+                if (i == 1)
+                {
+                    sqlColumnCreate = "CREATE TABLE [" + tableName + "] ([" + columName.ToString().Trim() + "] " + dataType + ", ";
+                }
+                else if (i == dataTable.Rows.Count)
+                    sqlColumnCreate = sqlColumnCreate + " [" + columName.ToString().Trim() + "] " + dataType + "); ";
+                else
+                    sqlColumnCreate = sqlColumnCreate + " [" + columName.ToString().Trim() + "] " + dataType + ", ";
+                i++;
+            }
+            return sqlColumnCreate;
+        }
+        private static string GetSqlServerDataType(string dataType, string maxLength, string precision = "0", int scale = 0)
+        {
+            //254 is the max length of a column on FoxPro
+
+            switch (dataType)
+            {
+                case "129":
+                    dataType = $"Varchar({maxLength})";
+                    break;
+                case "130":
+                    dataType = $"NVarchar(max)";
+                    break;
+                case "7":
+                case "133":
+                case "135":
+                    dataType = $"DateTime2";
+                    break;
+
+                case "20":
+                    dataType = "Bigint";
+                    break;
+                case "128":
+                    dataType = "Varbinary";
+                    break;
+                case "11":
+                    dataType = "Bit";
+                    break;
+                case "8":
+                    maxLength = maxLength == String.Empty ? "65535" : maxLength;
+
+                    dataType = $"nvarchar({maxLength})";
+                    break;
+
+                    dataType = "decimal(19, 2)";
+                    break;
+                case "134":
+                    dataType = "Timestamp";
+                    break;
+                case "5":
+                case "6":
+                case "14":
+                case "131":
+                    precision = precision == String.Empty ? "19" : precision;
+                    dataType = $"Decimal({precision}, {scale})";
+                    break;
+                case "72":
+                    dataType = $"UniqueIdentifier";
+                    break;
+                default:
+                    dataType = "varchar(max)";
+                    break;
+            };
+
+            return dataType;
+
+        }
+
+        private void InsertData(OleDbDataReader dataReader, DataTable columns, string connString, string tableName)
         {
             lbMessages.Items.Add("Insert Data started for Table: " + tableName);
 
-            NpgsqlConnection conn = new NpgsqlConnection(connString);
+            DbConnection conn = _dbConnection;
+
             StringBuilder sb = new StringBuilder();
-            conn.Open();
+
             using (conn)
             {
-                    if (conn.State != ConnectionState.Open)
-                    {
-                        conn.Close();
-                        conn.Dispose();
-                        conn = new NpgsqlConnection(connString);
-                        conn.Open();
-                    }
-                    var setEncoding = "set client_encoding = 'UTF8";
+                if (conn.State != ConnectionState.Open)
+                {
+                    conn.ConnectionString = _newConnString;
+                    conn.Open();
+                }
+                if (_isPostgres)
+                {
+                    var setEncoding = "set client_encoding = 'UTF8'";
                     var command = conn.CreateCommand();
                     command.CommandText = setEncoding;
                     command.ExecuteNonQuery();
+                }
 
                     using (var bulk = new BulkOperation(conn))
                     {
@@ -310,17 +443,20 @@ namespace LoadFoxProDBToSQL
                             bulk.AutoMap = AutoMapType.ByName;
                             bulk.BatchSize = 10000;
                             bulk.BatchTimeout = 360;
-                            bulk.Provider = ProviderType.PostgreSql;
-                            bulk.DestinationSchemaName = "public";
-                            bulk.DestinationTableName = tableName.ToLower();
+                            bulk.Provider = _isSqlServer ? ProviderType.SqlServer : ProviderType.PostgreSql;
+                            //ProviderType.PostgreSql;
+                            bulk.DestinationSchemaName = _isPostgres? "public" : "dbo";
+                            bulk.DestinationTableName = tableName;
                             bulk.CaseSensitive = CaseSensitiveType.DestinationInsensitive;
                             bulk.ColumnMappings = BuildColumnMapping(columns);
                             bulk.AutoTruncate = true;
                             bulk.DataSource = dataReader;
                             bulk.UseLogDump = true;
                             bulk.LogDump = sb;
+                            bulk.UseRowsAffected = true;
 
                             bulk.BulkInsert();
+                            lbMessages.Items.Add("Rows Inserted:" + bulk.ResultInfo.RowsAffectedInserted);
 
 
                             lbMessages.Items.Add("Insert Data Completed Successfully for Table: " + tableName);
@@ -388,7 +524,7 @@ namespace LoadFoxProDBToSQL
             return mappings;
         }
 
-        private static string BuildCreateStatement(DataTable columnsDataTable, string tableName)
+        private static string BuildPostgresCreateStatement(DataTable columnsDataTable, string tableName)
         {
 
             int i = 1;
@@ -437,8 +573,8 @@ namespace LoadFoxProDBToSQL
                 var precision = row[15].ToString();
                 var scaleString = row[16].ToString();
                 int.TryParse(scaleString, out int scale);
-                var dataType = _isDbase ? GetDBaseDataType(dataTypeString, maxLength, precision, scale) :
-                    GetFoxProDataType(dataTypeString, maxLength, precision, scale);
+                //var dataType = _isDbase ? GetDBaseDataType(dataTypeString, maxLength, precision, scale) :
+                //    GetFoxProDataType(dataTypeString, maxLength, precision, scale);
 
                 string primKey = "";
                 if (i == 1 && dataTable.Rows.Count > 1)

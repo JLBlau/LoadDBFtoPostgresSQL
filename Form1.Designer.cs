@@ -44,7 +44,11 @@
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.foxProButton1 = new System.Windows.Forms.RadioButton();
             this.dbaseButton1 = new System.Windows.Forms.RadioButton();
+            this.serverButton1 = new System.Windows.Forms.RadioButton();
+            this.serverButton2 = new System.Windows.Forms.RadioButton();
+            this.serverBox = new System.Windows.Forms.GroupBox();
             this.groupBox1.SuspendLayout();
+            this.serverBox.SuspendLayout();
             this.SuspendLayout();
             // 
             // DBFLabel
@@ -206,11 +210,45 @@
             this.dbaseButton1.Text = "Dbase";
             this.dbaseButton1.UseVisualStyleBackColor = true;
             // 
+            // serverButton1
+            // 
+            this.serverButton1.AutoSize = true;
+            this.serverButton1.Location = new System.Drawing.Point(35, 16);
+            this.serverButton1.Name = "serverButton1";
+            this.serverButton1.Size = new System.Drawing.Size(116, 24);
+            this.serverButton1.TabIndex = 14;
+            this.serverButton1.TabStop = true;
+            this.serverButton1.Text = "SQL Server";
+            this.serverButton1.UseVisualStyleBackColor = true;
+            // 
+            // serverButton2
+            // 
+            this.serverButton2.AutoSize = true;
+            this.serverButton2.Location = new System.Drawing.Point(175, 16);
+            this.serverButton2.Name = "serverButton2";
+            this.serverButton2.Size = new System.Drawing.Size(112, 24);
+            this.serverButton2.TabIndex = 15;
+            this.serverButton2.TabStop = true;
+            this.serverButton2.Text = "PostreSQL";
+            this.serverButton2.UseVisualStyleBackColor = true;
+            // 
+            // serverBox
+            // 
+            this.serverBox.Controls.Add(this.serverButton1);
+            this.serverBox.Controls.Add(this.serverButton2);
+            this.serverBox.Location = new System.Drawing.Point(456, 3);
+            this.serverBox.Name = "serverBox";
+            this.serverBox.Size = new System.Drawing.Size(375, 50);
+            this.serverBox.TabIndex = 16;
+            this.serverBox.TabStop = false;
+            this.serverBox.Text = "Destination Server Type";
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1334, 749);
+            this.Controls.Add(this.serverBox);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.lbMessages);
             this.Controls.Add(this.startButton);
@@ -230,6 +268,8 @@
             this.Text = "MainForm";
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
+            this.serverBox.ResumeLayout(false);
+            this.serverBox.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -253,6 +293,9 @@
         private System.Windows.Forms.GroupBox groupBox1;
         private System.Windows.Forms.RadioButton foxProButton1;
         private System.Windows.Forms.RadioButton dbaseButton1;
+        private System.Windows.Forms.RadioButton serverButton1;
+        private System.Windows.Forms.RadioButton serverButton2;
+        private System.Windows.Forms.GroupBox serverBox;
     }
 }
 
