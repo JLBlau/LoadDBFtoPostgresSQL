@@ -40,13 +40,13 @@
             this.sqlDBLabel = new System.Windows.Forms.Label();
             this.newSQLDBName = new System.Windows.Forms.TextBox();
             this.startButton = new System.Windows.Forms.Button();
-            this.lbMessages = new System.Windows.Forms.ListBox();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.foxProButton1 = new System.Windows.Forms.RadioButton();
             this.dbaseButton1 = new System.Windows.Forms.RadioButton();
             this.serverButton1 = new System.Windows.Forms.RadioButton();
             this.serverButton2 = new System.Windows.Forms.RadioButton();
             this.serverBox = new System.Windows.Forms.GroupBox();
+            this.messageBox = new System.Windows.Forms.RichTextBox();
             this.groupBox1.SuspendLayout();
             this.serverBox.SuspendLayout();
             this.SuspendLayout();
@@ -167,16 +167,6 @@
             this.startButton.UseVisualStyleBackColor = true;
             this.startButton.Click += new System.EventHandler(this.startButton_Click);
             // 
-            // lbMessages
-            // 
-            this.lbMessages.FormattingEnabled = true;
-            this.lbMessages.ItemHeight = 20;
-            this.lbMessages.Location = new System.Drawing.Point(14, 272);
-            this.lbMessages.Margin = new System.Windows.Forms.Padding(2);
-            this.lbMessages.Name = "lbMessages";
-            this.lbMessages.Size = new System.Drawing.Size(1296, 464);
-            this.lbMessages.TabIndex = 12;
-            // 
             // groupBox1
             // 
             this.groupBox1.Controls.Add(this.foxProButton1);
@@ -243,14 +233,25 @@
             this.serverBox.TabStop = false;
             this.serverBox.Text = "Destination Server Type";
             // 
+            // messageBox
+            // 
+            this.messageBox.Location = new System.Drawing.Point(14, 266);
+            this.messageBox.Name = "messageBox";
+            this.messageBox.ReadOnly = true;
+            this.messageBox.RightToLeft = System.Windows.Forms.RightToLeft.No;
+            this.messageBox.ShortcutsEnabled = false;
+            this.messageBox.Size = new System.Drawing.Size(1182, 258);
+            this.messageBox.TabIndex = 17;
+            this.messageBox.Text = "";
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1334, 749);
+            this.Controls.Add(this.messageBox);
             this.Controls.Add(this.serverBox);
             this.Controls.Add(this.groupBox1);
-            this.Controls.Add(this.lbMessages);
             this.Controls.Add(this.startButton);
             this.Controls.Add(this.newSQLDBName);
             this.Controls.Add(this.sqlDBLabel);
@@ -289,13 +290,13 @@
         private System.Windows.Forms.Label sqlDBLabel;
         private System.Windows.Forms.TextBox newSQLDBName;
         private System.Windows.Forms.Button startButton;
-        private System.Windows.Forms.ListBox lbMessages;
         private System.Windows.Forms.GroupBox groupBox1;
         private System.Windows.Forms.RadioButton foxProButton1;
         private System.Windows.Forms.RadioButton dbaseButton1;
         private System.Windows.Forms.RadioButton serverButton1;
         private System.Windows.Forms.RadioButton serverButton2;
         private System.Windows.Forms.GroupBox serverBox;
+        private System.Windows.Forms.RichTextBox messageBox;
     }
 }
 
