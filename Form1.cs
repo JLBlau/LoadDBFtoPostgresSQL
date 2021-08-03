@@ -26,14 +26,15 @@ namespace LoadFoxProDBToSQL
         string _path;
         //NpgsqlConnection _pgsqlConnection;
         //SqlConnection _sqlConnection;
-        DbConnection _mdbConnection;
+        DbConnection _masterdbConnection;
         DbConnection _dbConnection;
-        OleDbConnection _dbfConnection;
+        OleDbConnection _sourceConnection;
         string _masterConnString;
         string _newConnString;
-        string _dbfConnString;
+        string _sourceConnString;
         static bool _isFoxPro;
         static bool _isDbase;
+        static bool _isAccess;
         static bool _isSqlServer;
         static bool _isPostgres;
         StringBuilder _messageBuilder;
@@ -46,34 +47,49 @@ namespace LoadFoxProDBToSQL
         {
             int size = -1;
             string path = null;
-            FolderBrowserDialog pathFileDialog = new FolderBrowserDialog();
-            DialogResult result = pathFileDialog.ShowDialog(); // Show the dialog.
-            if (result == DialogResult.OK) // Test result.
+            if (!_isAccess)
             {
-                path = pathFileDialog.SelectedPath.ToString();
-                _path = path;
-                dbfPath.Text = path;
+                FolderBrowserDialog pathFileDialog = new FolderBrowserDialog();
+                DialogResult result = pathFileDialog.ShowDialog(); // Show the dialog.
+                if (result == DialogResult.OK) // Test result.
+                {
+                    path = pathFileDialog.SelectedPath.ToString();
+                    _path = path;
+                    dbPath.Text = path;
+                }
+            }
+            else
+            {
+                FileDialog fileDialog = new OpenFileDialog();
+                DialogResult result = fileDialog.ShowDialog();
+                if(result == DialogResult.OK)
+                {
+                    _path = fileDialog.FileName.ToString();
+                    dbPath.Text = _path;
+                }
+
             }
         }
 
         private void startButton_Click(object sender, EventArgs e)
         {
-            if (!dbaseButton1.Checked && !foxProButton1.Checked)
-                MessageBox.Show("DBF Type is Required.");
+            if (!dbaseButton1.Checked && !foxProButton1.Checked && !accessButton.Checked)
+                MessageBox.Show("Source DB Type is Required.");
             if (!serverButton1.Checked && !serverButton2.Checked)
                 MessageBox.Show("Server Type is Required");
             else
             {
                 _isDbase = dbaseButton1.Checked;
                 _isFoxPro = foxProButton1.Checked;
+                _isAccess = accessButton.Checked;
                 _isSqlServer = serverButton1.Checked;
                 _isPostgres = serverButton2.Checked;
-                LoadDBF();
+                LoadSource();
             }
 
         }
 
-        private void LoadDBF()
+        private void LoadSource()
         {
 
             var stopwatch = new Stopwatch();
@@ -97,11 +113,15 @@ namespace LoadFoxProDBToSQL
 
             }
 
-            if (dbaseButton1.Checked)
+            if (_isDbase)
                 //_dbfConnString = $"Provider=Microsoft.ACE.OLEDB.16.0;Data Source={dbfPath.Text};Extended Properties=dBASE IV;User ID=Admin";
-                _dbfConnString =  $"Provider = Microsoft.Jet.OLEDB.4.0; Data Source ={dbfPath.Text}; Extended Properties = dBase 5.0";
+                _sourceConnString = $"Provider = Microsoft.Jet.OLEDB.4.0; Data Source ={dbPath.Text}; Extended Properties = dBase 5.0";
+            else if (_isFoxPro)
+                _sourceConnString = $"Provider=vfpoledb;Data Source={dbPath.Text};CollatingSequence=general;";
+            else if (_isAccess)
+                _sourceConnString = $"Provider=Microsoft.ACE.OLEDB.16.0;Data Source={dbPath.Text};User ID=Admin";
             else
-                _dbfConnString = $"Provider=vfpoledb;Data Source={dbfPath.Text};CollatingSequence=general;";
+                throw new NotImplementedException();
 
             bool sqlSuccess;
             if (serverButton1.Checked)
@@ -109,8 +129,57 @@ namespace LoadFoxProDBToSQL
             else
                 sqlSuccess = ConnectAndCreatePostgresDB(_masterConnString);
 
-            var tableList = ConnectToDBFGetTableList();
+            var tableList = GetSourceDBTableList();
 
+            foreach (var t in tableList.AsEnumerable())
+            {
+
+                try
+                {
+                    var conn1 = new OleDbConnection(_sourceConnString);
+                    conn1.Open();
+                    _sourceConnection = conn1;
+
+                    var tableName = t[2].ToString();
+                    DataTable columns = new DataTable();
+                    columns = conn1.GetSchema("Columns", new[] { null, null, tableName });
+                    OleDbDataReader dataReader;
+
+                    using (OleDbCommand comm = conn1.CreateCommand())
+                    {
+                        comm.CommandText = BuildSelectStatement(columns, tableName);
+                        comm.CommandType = CommandType.Text;
+                        dataReader = comm.ExecuteReader();
+
+
+                        if (_isPostgres)
+                        {
+                            CreatePostgresDestinationTable(columns, _newConnString, tableName);
+                            InsertData(dataReader, columns, _newConnString, tableName);
+                        }
+                        else if (_isSqlServer)
+                        {
+                            CreateSqlServerDestinationTable(columns, _newConnString, tableName);
+                            InsertData(dataReader, columns, _newConnString, tableName);
+                        }
+                    }
+                }
+                catch (OleDbException ex)
+                {
+                    var tableName = t[2].ToString();
+                    _messageBuilder.Append($"Error occurred on table {tableName}. Exception: {ex.Message}");
+                    messageBox.Text = _messageBuilder.ToString();
+                    continue;
+
+                }
+                catch (Exception ex)
+                {
+                    var tableName = t[2].ToString();
+                    _messageBuilder.Append($"Error occurred on table {tableName}. Exception: {ex.Message}");
+                    messageBox.Text = _messageBuilder.ToString();
+                    continue;
+                }
+            }
 
 
 
@@ -121,7 +190,7 @@ namespace LoadFoxProDBToSQL
             bool success = false;
             //connect to SQL First
             SqlConnection sqlConn = new SqlConnection(connString);
-            _mdbConnection = sqlConn;
+            _masterdbConnection = sqlConn;
             try
             {
                 sqlConn.Open();
@@ -164,7 +233,7 @@ namespace LoadFoxProDBToSQL
             //connect to SQL First
 
             Npgsql.NpgsqlConnection connection = new Npgsql.NpgsqlConnection(connString);
-            _mdbConnection = connection;
+            _masterdbConnection = connection;
             try
             {
                 connection.Open();
@@ -198,9 +267,9 @@ namespace LoadFoxProDBToSQL
             return success;
         }
 
-        private DataTable ConnectToDBFGetTableList()
+        private DataTable GetSourceDBTableList()
         {
-            OleDbConnection tableConn = new OleDbConnection(_dbfConnString);
+            OleDbConnection tableConn = new OleDbConnection(_sourceConnString);
             
             tableConn.Open();
             DataTable tables = new DataTable();
@@ -208,59 +277,7 @@ namespace LoadFoxProDBToSQL
             tableConn.Close();
             tableConn.Dispose();
 
-
-            foreach (var t in tables.AsEnumerable())
-            {
-
-                try
-                {
-                    var conn1 = new OleDbConnection(_dbfConnString);
-                    conn1.Open();
-                    _dbfConnection = conn1;
-
-                    var tableName = t[2].ToString();
-                        DataTable columns = new DataTable();
-                        columns = conn1.GetSchema("Columns", new[] { null, null, tableName });
-
-                        using (OleDbCommand comm = conn1.CreateCommand())
-                        {
-                            comm.CommandText = BuildSelectStatement(columns, tableName);
-                            comm.CommandType = CommandType.Text;
-                            var dataReader = comm.ExecuteReader();
-                        if (_isPostgres)
-                        {
-                            CreatePostgresDestinationTable(columns, _newConnString, tableName);
-                            InsertData(dataReader, columns, _newConnString, tableName);
-                        }
-                        else
-                        {
-                            CreateSqlServerDestinationTable(columns,_newConnString, tableName);
-                            InsertData(dataReader, columns, _newConnString, tableName);
-                        }
-                            
-                        }
-                        conn1.Close();
-                        conn1.Dispose();
-                    
-                }
-                catch (OleDbException ex)
-                {
-                    var tableName = t[2].ToString();
-                    _messageBuilder.Append($"Error occurred on table {tableName}. Exception: {ex.Message}");
-                   messageBox.Text = _messageBuilder.ToString();
-                    continue;
-
-                }
-                catch (Exception ex)
-                {
-                    var tableName = t[2].ToString();
-                    _messageBuilder.Append($"Error occurred on table {tableName}. Exception: {ex.Message}");
-                    messageBox.Text = _messageBuilder.ToString();
-                    continue;
-                }
-            }
-
-                return tables;
+            return tables;
             
         }
 
@@ -315,7 +332,7 @@ namespace LoadFoxProDBToSQL
         {
             var conn = _dbConnection;
             //lbMessages.Items.Add("Create table Started for Table: {dataTable.TableName}");
-            _messageBuilder.Append("Create table Started for Table: {dataTable.TableName}");
+            _messageBuilder.Append($"Create table Started for Table: {tableName}");
             messageBox.Text = _messageBuilder.ToString();
             if (conn.State != ConnectionState.Open)
             {
@@ -358,21 +375,27 @@ namespace LoadFoxProDBToSQL
             string sqlColumnCreate = "";
             foreach (var row in dataTable.AsEnumerable().OrderBy(x => x.ItemArray[6]))
             {
-                var columName = row[3].ToString();
+                var columnName = row[3].ToString();
                 var dataTypeString = row[11].ToString();
                 var maxLength = row[13].ToString();
                 var precision = row[15].ToString();
                 var dataType = GetSqlServerDataType(dataTypeString, maxLength, precision);
 
+                if (_isAccess )
+                {
+                    columnName = columnName.Replace(" ", "_");
+                    tableName = tableName.Replace(" ", "_");
+                }
+
                 string primKey = "";
                 if (i == 1)
                 {
-                    sqlColumnCreate = "CREATE TABLE [" + tableName + "] ([" + columName.ToString().Trim() + "] " + dataType + ", ";
+                    sqlColumnCreate = "CREATE TABLE [" + tableName + "] ([" + columnName.ToString().Trim() + "] " + dataType + ", ";
                 }
                 else if (i == dataTable.Rows.Count)
-                    sqlColumnCreate = sqlColumnCreate + " [" + columName.ToString().Trim() + "] " + dataType + "); ";
+                    sqlColumnCreate = sqlColumnCreate + " [" + columnName.ToString().Trim() + "] " + dataType + "); ";
                 else
-                    sqlColumnCreate = sqlColumnCreate + " [" + columName.ToString().Trim() + "] " + dataType + ", ";
+                    sqlColumnCreate = sqlColumnCreate + " [" + columnName.ToString().Trim() + "] " + dataType + ", ";
                 i++;
             }
             return sqlColumnCreate;
@@ -470,7 +493,7 @@ namespace LoadFoxProDBToSQL
                             bulk.Provider = _isSqlServer ? ProviderType.SqlServer : ProviderType.PostgreSql;
                             //ProviderType.PostgreSql;
                             bulk.DestinationSchemaName = _isPostgres? "public" : "dbo";
-                            bulk.DestinationTableName = tableName;
+                            bulk.DestinationTableName = tableName.Replace(" ", "_");
                             bulk.CaseSensitive = CaseSensitiveType.DestinationInsensitive;
                             bulk.ColumnMappings = BuildColumnMapping(columns);
                             bulk.AutoTruncate = true;
@@ -506,7 +529,7 @@ namespace LoadFoxProDBToSQL
                     }
                 }
 
-                _messageBuilder.Append($"StringBuilderLog for DataTable:{tableName} {sb.ToString()}");
+                //_messageBuilder.Append($"StringBuilderLog for DataTable:{tableName} {sb.ToString()}");
                 messageBox.Text = _messageBuilder.ToString();
             //dataTable.Clear();
             //dataTable.Dispose();
@@ -520,20 +543,25 @@ namespace LoadFoxProDBToSQL
             foreach(var row in dt.AsEnumerable().OrderBy(x => x.ItemArray[6]))
             {
                 ColumnMapping colMap;
-                var columName = row[3].ToString();
+                var columnName = row[3].ToString();
+                var newColumnName = row[3].ToString();
+
+                if (newColumnName.Contains(" "))
+                    newColumnName = newColumnName.Replace(" ", "_");
+
                 Type dataType = GetDotNetDataType(row[11].ToString());
                 var ordinal = int.Parse(row[6].ToString());
                 
                 if(dataType == typeof(System.String))
                 {
                     colMap = new ColumnMapping();
-                    colMap.SourceName = columName.ToString();
-                    colMap.DestinationName = columName.ToString();
-                    //colMap.FormulaInsert = $"CASE WHEN LTRIM(RTRIM(REPLACE(REPLACE(StagingTable.{columName},  char(0), ''), 0x00, ''))) = '' THEN NULL ELSE LTRIM(RTRIM(REPLACE(REPLACE(StagingTable.{columName},  char(0), ''), 0x00, '')) END";
+                    colMap.SourceName = columnName.ToString();
+                    colMap.DestinationName = newColumnName.ToString();
+                    //colMap.FormulaInsert = $"CASE WHEN LTRIM(RTRIM(REPLACE(REPLACE(StagingTable.{columnName},  char(0), ''), 0x00, ''))) = '' THEN NULL ELSE LTRIM(RTRIM(REPLACE(REPLACE(StagingTable.{columnName},  char(0), ''), 0x00, '')) END";
                     colMap.SourceValueFactory = x => {
                         var r = (IDataReader)x;
                         var dtable = dataType;
-                        var stringValue = r.GetString(r.GetOrdinal($"{columName}"));
+                        var stringValue = r.GetString(r.GetOrdinal($"{columnName}"));
                         var value = stringValue.Replace(Convert.ToChar(0x00).ToString(), string.Empty).Replace('\u0000'.ToString(), "");
                         //var bytes = Encoding.UTF8.GetBytes(stringValue).Where(b => b != 0).ToArray();
                         //var value = Encoding.ASCII.GetString(bytes).TrimEnd();
@@ -544,16 +572,16 @@ namespace LoadFoxProDBToSQL
                 else if(dataType == typeof(System.Decimal))
                 {
                     colMap = new ColumnMapping();
-                    colMap.SourceName = columName.ToString();
-                    colMap.DestinationName = columName.ToString();
+                    colMap.SourceName = columnName.ToString();
+                    colMap.DestinationName = newColumnName.ToString();
                     colMap.DefaultValue = 0;
                 }
                 else
                 {
 
                     colMap = new ColumnMapping();
-                    colMap.SourceName = columName.ToString();
-                    colMap.DestinationName = columName.ToString();
+                    colMap.SourceName = columnName.ToString();
+                    colMap.DestinationName = newColumnName.ToString();
                     colMap.DefaultValueResolution = DefaultValueResolutionType.Null;
 
                 }
@@ -570,7 +598,7 @@ namespace LoadFoxProDBToSQL
             foreach (var row in columnsDataTable.AsEnumerable().OrderBy(x => x.ItemArray[6]))
             {
                 
-                var columName = row[3].ToString();
+                var columnName = row[3].ToString();
                 var dataTypeString = row[11].ToString();
                 var maxLength = row[13].ToString();
                 var precision = row[15].ToString();
@@ -578,21 +606,29 @@ namespace LoadFoxProDBToSQL
                 int.TryParse(scaleString, out int scale);
                 var dataType = GetDataType(dataTypeString,maxLength, precision, scale);
 
+                if (columnName.Contains(" "))
+                    columnName = columnName.Replace(" ", "_");
+                if(_isAccess)
+                {
+                    columnName = columnName.Replace(" ", "_").ToLower();
+                    tableName = tableName.Replace(" ", "_").ToLower();
+                }
+
                 string primKey = "";
                 if (i == 1 && columnsDataTable.Rows.Count > 1)
                 {
                         primKey = " PRIMARY KEY";
-                        sqlColumnCreate = $"CREATE TABLE  \"{tableName.ToLower()}\" ( \"{columName.ToLower().ToString().Trim()}\"   { dataType}, ";
+                        sqlColumnCreate = $"CREATE TABLE  \"{tableName.ToLower()}\" ( \"{columnName.ToLower().ToString().Trim()}\"   { dataType}, ";
                 }
                 else if (i == 1 && columnsDataTable.Rows.Count == 1)
                 {
-                    sqlColumnCreate = $"CREATE TABLE \"{tableName.ToLower()}\" ( \"{columName.ToLower().ToString().Trim()}\"   { dataType}); ";
+                    sqlColumnCreate = $"CREATE TABLE \"{tableName.ToLower()}\" ( \"{columnName.ToLower().ToString().Trim()}\"   { dataType}); ";
 
                 }
                 else if (i == columnsDataTable.Rows.Count)
-                    sqlColumnCreate = sqlColumnCreate + $" \"{columName.ToLower().ToString().Trim()}\" {dataType}); ";
+                    sqlColumnCreate = sqlColumnCreate + $" \"{columnName.ToLower().ToString().Trim()}\" {dataType}); ";
                 else
-                    sqlColumnCreate = sqlColumnCreate + $" \"{columName.ToLower().ToString().Trim()}\" {dataType}, ";
+                    sqlColumnCreate = sqlColumnCreate + $" \"{columnName.ToLower().ToString().Trim()}\" {dataType}, ";
                 i++;
             }
             return sqlColumnCreate;
@@ -605,7 +641,7 @@ namespace LoadFoxProDBToSQL
             string sqlSelect = "";
             foreach (var row in dataTable.AsEnumerable().OrderBy(x=> x.ItemArray[6]))
             {
-                var columName = row[3].ToString();
+                var columnName = row[3].ToString();
                 var dataTypeString = row[11].ToString();
                 var maxLength = row[13].ToString();
                 var precision = row[15].ToString();
@@ -617,16 +653,16 @@ namespace LoadFoxProDBToSQL
                 string primKey = "";
                 if (i == 1 && dataTable.Rows.Count > 1)
                 {
-                    sqlSelect = $"Select {columName.ToString().Trim()} , ";
+                    sqlSelect = $"Select [{columnName.ToString().Trim()}] , ";
                 }
                 else if (i == 1 && dataTable.Rows.Count == 1)
                 {
-                    sqlSelect = $"Select {columName.ToString().Trim()} FROM [{tableName.ToString()}] ";
+                    sqlSelect = $"Select [{columnName.ToString().Trim()}] FROM [{tableName.ToString()}] ";
                 }
                 else if (i == dataTable.Rows.Count)
-                    sqlSelect = sqlSelect + $" {columName.ToString().Trim()}  FROM [{tableName.ToString()}] ";
+                    sqlSelect = sqlSelect + $" [{columnName.ToString().Trim()}]  FROM [{tableName.ToString()}] ";
                 else
-                    sqlSelect = sqlSelect + $" {columName.ToString().Trim()}, ";
+                    sqlSelect = sqlSelect + $" [{columnName.ToString().Trim()}], ";
                 i++;
             }
             return sqlSelect;
@@ -854,6 +890,32 @@ namespace LoadFoxProDBToSQL
         private void radioButton1_CheckedChanged(object sender, EventArgs e)
         {
 
+        }
+
+        private void dbaseButton1_CheckedChanged(object sender, EventArgs e)
+        {
+            _isAccess = accessButton.Checked;
+            _isDbase = dbaseButton1.Checked;
+            _isFoxPro = foxProButton1.Checked;
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+
+        }
+
+        private void accessButton_CheckedChanged(object sender, EventArgs e)
+        {
+            _isAccess = accessButton.Checked;
+            _isDbase = dbaseButton1.Checked;
+            _isFoxPro = foxProButton1.Checked;
+        }
+
+        private void foxProButton1_CheckedChanged(object sender, EventArgs e)
+        {
+            _isAccess = accessButton.Checked;
+            _isDbase = dbaseButton1.Checked;
+            _isFoxPro = foxProButton1.Checked;
         }
     }
 }

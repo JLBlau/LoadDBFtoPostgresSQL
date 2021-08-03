@@ -29,7 +29,7 @@
         private void InitializeComponent()
         {
             this.DBFLabel = new System.Windows.Forms.Label();
-            this.dbfPath = new System.Windows.Forms.TextBox();
+            this.dbPath = new System.Windows.Forms.TextBox();
             this.selectFolder = new System.Windows.Forms.Button();
             this.sqlServerLabel = new System.Windows.Forms.Label();
             this.serverName = new System.Windows.Forms.TextBox();
@@ -41,6 +41,7 @@
             this.newSQLDBName = new System.Windows.Forms.TextBox();
             this.startButton = new System.Windows.Forms.Button();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.accessButton = new System.Windows.Forms.RadioButton();
             this.foxProButton1 = new System.Windows.Forms.RadioButton();
             this.dbaseButton1 = new System.Windows.Forms.RadioButton();
             this.serverButton1 = new System.Windows.Forms.RadioButton();
@@ -54,24 +55,24 @@
             // DBFLabel
             // 
             this.DBFLabel.AutoSize = true;
-            this.DBFLabel.Location = new System.Drawing.Point(20, 58);
+            this.DBFLabel.Location = new System.Drawing.Point(14, 58);
             this.DBFLabel.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.DBFLabel.Name = "DBFLabel";
-            this.DBFLabel.Size = new System.Drawing.Size(107, 20);
+            this.DBFLabel.Size = new System.Drawing.Size(138, 20);
             this.DBFLabel.TabIndex = 0;
-            this.DBFLabel.Text = "DBF Location";
+            this.DBFLabel.Text = "DBF /DB Location";
             // 
-            // dbfPath
+            // dbPath
             // 
-            this.dbfPath.Location = new System.Drawing.Point(156, 58);
-            this.dbfPath.Margin = new System.Windows.Forms.Padding(2);
-            this.dbfPath.Name = "dbfPath";
-            this.dbfPath.Size = new System.Drawing.Size(815, 26);
-            this.dbfPath.TabIndex = 1;
+            this.dbPath.Location = new System.Drawing.Point(156, 58);
+            this.dbPath.Margin = new System.Windows.Forms.Padding(2);
+            this.dbPath.Name = "dbPath";
+            this.dbPath.Size = new System.Drawing.Size(815, 26);
+            this.dbPath.TabIndex = 1;
             // 
             // selectFolder
             // 
-            this.selectFolder.Location = new System.Drawing.Point(996, 58);
+            this.selectFolder.Location = new System.Drawing.Point(986, 51);
             this.selectFolder.Margin = new System.Windows.Forms.Padding(2);
             this.selectFolder.Name = "selectFolder";
             this.selectFolder.Size = new System.Drawing.Size(124, 40);
@@ -169,41 +170,56 @@
             // 
             // groupBox1
             // 
+            this.groupBox1.Controls.Add(this.accessButton);
             this.groupBox1.Controls.Add(this.foxProButton1);
             this.groupBox1.Controls.Add(this.dbaseButton1);
             this.groupBox1.Location = new System.Drawing.Point(24, 3);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(371, 50);
+            this.groupBox1.Size = new System.Drawing.Size(417, 50);
             this.groupBox1.TabIndex = 13;
             this.groupBox1.TabStop = false;
-            this.groupBox1.Text = "DBFType";
+            this.groupBox1.Text = "Source Data Type";
+            // 
+            // accessButton
+            // 
+            this.accessButton.AutoSize = true;
+            this.accessButton.Location = new System.Drawing.Point(271, 19);
+            this.accessButton.Name = "accessButton";
+            this.accessButton.Size = new System.Drawing.Size(113, 24);
+            this.accessButton.TabIndex = 3;
+            this.accessButton.TabStop = true;
+            this.accessButton.Text = "Access DB";
+            this.accessButton.UseVisualStyleBackColor = true;
+            this.accessButton.CheckedChanged += new System.EventHandler(this.accessButton_CheckedChanged);
             // 
             // foxProButton1
             // 
             this.foxProButton1.AutoSize = true;
-            this.foxProButton1.Location = new System.Drawing.Point(248, 20);
+            this.foxProButton1.Location = new System.Drawing.Point(143, 20);
             this.foxProButton1.Name = "foxProButton1";
-            this.foxProButton1.Size = new System.Drawing.Size(84, 24);
+            this.foxProButton1.Size = new System.Drawing.Size(121, 24);
             this.foxProButton1.TabIndex = 2;
             this.foxProButton1.TabStop = true;
-            this.foxProButton1.Text = "FoxPro";
+            this.foxProButton1.Text = "FoxPro DBF";
             this.foxProButton1.UseVisualStyleBackColor = true;
+            this.foxProButton1.CheckedChanged += new System.EventHandler(this.foxProButton1_CheckedChanged);
             // 
             // dbaseButton1
             // 
             this.dbaseButton1.AutoSize = true;
-            this.dbaseButton1.Location = new System.Drawing.Point(88, 20);
+            this.dbaseButton1.Location = new System.Drawing.Point(16, 20);
             this.dbaseButton1.Name = "dbaseButton1";
-            this.dbaseButton1.Size = new System.Drawing.Size(81, 24);
+            this.dbaseButton1.Size = new System.Drawing.Size(118, 24);
             this.dbaseButton1.TabIndex = 0;
             this.dbaseButton1.TabStop = true;
-            this.dbaseButton1.Text = "Dbase";
+            this.dbaseButton1.Text = "Dbase DBF";
             this.dbaseButton1.UseVisualStyleBackColor = true;
+            this.dbaseButton1.CheckedChanged += new System.EventHandler(this.dbaseButton1_CheckedChanged);
             // 
             // serverButton1
             // 
             this.serverButton1.AutoSize = true;
-            this.serverButton1.Location = new System.Drawing.Point(35, 16);
+            this.serverButton1.Location = new System.Drawing.Point(6, 20);
             this.serverButton1.Name = "serverButton1";
             this.serverButton1.Size = new System.Drawing.Size(116, 24);
             this.serverButton1.TabIndex = 14;
@@ -214,7 +230,7 @@
             // serverButton2
             // 
             this.serverButton2.AutoSize = true;
-            this.serverButton2.Location = new System.Drawing.Point(175, 16);
+            this.serverButton2.Location = new System.Drawing.Point(199, 20);
             this.serverButton2.Name = "serverButton2";
             this.serverButton2.Size = new System.Drawing.Size(112, 24);
             this.serverButton2.TabIndex = 15;
@@ -226,7 +242,7 @@
             // 
             this.serverBox.Controls.Add(this.serverButton1);
             this.serverBox.Controls.Add(this.serverButton2);
-            this.serverBox.Location = new System.Drawing.Point(456, 3);
+            this.serverBox.Location = new System.Drawing.Point(596, 3);
             this.serverBox.Name = "serverBox";
             this.serverBox.Size = new System.Drawing.Size(375, 50);
             this.serverBox.TabIndex = 16;
@@ -240,7 +256,7 @@
             this.messageBox.ReadOnly = true;
             this.messageBox.RightToLeft = System.Windows.Forms.RightToLeft.No;
             this.messageBox.ShortcutsEnabled = false;
-            this.messageBox.Size = new System.Drawing.Size(1182, 258);
+            this.messageBox.Size = new System.Drawing.Size(1369, 385);
             this.messageBox.TabIndex = 17;
             this.messageBox.Text = "";
             // 
@@ -248,7 +264,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1334, 749);
+            this.ClientSize = new System.Drawing.Size(1395, 749);
             this.Controls.Add(this.messageBox);
             this.Controls.Add(this.serverBox);
             this.Controls.Add(this.groupBox1);
@@ -262,11 +278,12 @@
             this.Controls.Add(this.serverName);
             this.Controls.Add(this.sqlServerLabel);
             this.Controls.Add(this.selectFolder);
-            this.Controls.Add(this.dbfPath);
+            this.Controls.Add(this.dbPath);
             this.Controls.Add(this.DBFLabel);
             this.Margin = new System.Windows.Forms.Padding(2);
             this.Name = "Form1";
             this.Text = "MainForm";
+            this.Load += new System.EventHandler(this.Form1_Load);
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
             this.serverBox.ResumeLayout(false);
@@ -279,7 +296,7 @@
         #endregion
 
         private System.Windows.Forms.Label DBFLabel;
-        private System.Windows.Forms.TextBox dbfPath;
+        private System.Windows.Forms.TextBox dbPath;
         private System.Windows.Forms.Button selectFolder;
         private System.Windows.Forms.Label sqlServerLabel;
         private System.Windows.Forms.TextBox serverName;
@@ -297,6 +314,7 @@
         private System.Windows.Forms.RadioButton serverButton2;
         private System.Windows.Forms.GroupBox serverBox;
         private System.Windows.Forms.RichTextBox messageBox;
+        private System.Windows.Forms.RadioButton accessButton;
     }
 }
 
