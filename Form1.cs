@@ -167,7 +167,7 @@ namespace LoadFoxProDBToSQL
                 catch (OleDbException ex)
                 {
                     var tableName = t[2].ToString();
-                    _messageBuilder.Append($"Error occurred on table {tableName}. Exception: {ex.Message}");
+                    _messageBuilder.Append($"Error occurred on table {tableName}. Exception: {ex.Message}" + Environment.NewLine);
                     messageBox.Text = _messageBuilder.ToString();
                     continue;
 
@@ -175,7 +175,7 @@ namespace LoadFoxProDBToSQL
                 catch (Exception ex)
                 {
                     var tableName = t[2].ToString();
-                    _messageBuilder.Append($"Error occurred on table {tableName}. Exception: {ex.Message}");
+                    _messageBuilder.Append($"Error occurred on table {tableName}. Exception: {ex.Message}" + Environment.NewLine);
                     messageBox.Text = _messageBuilder.ToString();
                     continue;
                 }
@@ -185,11 +185,19 @@ namespace LoadFoxProDBToSQL
 
         }
 
+        private DbConnection GetDbConnection(string connString)
+        {
+            if (_isPostgres)
+                return new NpgsqlConnection(connString);
+            else
+                return new SqlConnection(connString);
+        }
+
         private bool ConnectAndCreateSQLDB(string connString)
         {
             bool success = false;
             //connect to SQL First
-            SqlConnection sqlConn = new SqlConnection(connString);
+            SqlConnection sqlConn = (SqlConnection)GetDbConnection(connString);
             _masterdbConnection = sqlConn;
             try
             {
@@ -213,7 +221,7 @@ namespace LoadFoxProDBToSQL
             catch (Exception ex)
             {
                 //lbMessages.Items.Add($"ERROR! occurred creating new DB {newSQLDBName.Text}. Ex:{ex.Message}");
-                _messageBuilder.Append($"ERROR! occurred creating new DB {newSQLDBName.Text}. Ex:{ex.Message}");
+                _messageBuilder.Append($"ERROR! occurred creating new DB {newSQLDBName.Text}. Ex:{ex.Message}" + Environment.NewLine);
                 messageBox.Text = _messageBuilder.ToString();
             }
             sqlConn.Close();
@@ -229,10 +237,11 @@ namespace LoadFoxProDBToSQL
 
         private bool ConnectAndCreatePostgresDB(string connString)
         {
-            bool success = false; 
+            bool success = false;
             //connect to SQL First
 
-            Npgsql.NpgsqlConnection connection = new Npgsql.NpgsqlConnection(connString);
+            NpgsqlConnection connection = (NpgsqlConnection)GetDbConnection(connString);
+                //new Npgsql.NpgsqlConnection(connString);
             _masterdbConnection = connection;
             try
             {
@@ -241,7 +250,7 @@ namespace LoadFoxProDBToSQL
             }
             catch (Exception ex)
             {
-                _messageBuilder.Append($"Cannot open connection to {serverName.Text}. Ex: {ex.Message}");
+                _messageBuilder.Append($"Cannot open connection to {serverName.Text}. Ex: {ex.Message}" + Environment.NewLine);
                 messageBox.Text = _messageBuilder.ToString();
             }
             try
@@ -253,7 +262,7 @@ namespace LoadFoxProDBToSQL
             }
             catch (Exception ex)
             {
-                _messageBuilder.Append($"Error occurred creating new DB {newSQLDBName.Text}. Ex:{ex.Message}");
+                _messageBuilder.Append($"Error occurred creating new DB {newSQLDBName.Text}. Ex:{ex.Message}" + Environment.NewLine);
                 messageBox.Text = _messageBuilder.ToString();
             }
             connection.Close();
@@ -284,7 +293,7 @@ namespace LoadFoxProDBToSQL
         private void CreatePostgresDestinationTable(DataTable columnsDataTable, string connString, string tableName)
         {
             
-            _messageBuilder.Append($"Create table Started for Table: {tableName}");
+            _messageBuilder.Append($"Create table Started for Table: {tableName}" + Environment.NewLine);
             messageBox.Text = _messageBuilder.ToString();
             NpgsqlConnection conn = new NpgsqlConnection();
             conn.ConnectionString = connString;
@@ -293,7 +302,6 @@ namespace LoadFoxProDBToSQL
                 if(conn.State != ConnectionState.Open)
                 {
                     conn.Close();
-                    conn.Dispose();
                     conn = new NpgsqlConnection();
                     conn.ConnectionString = connString;
                 }
@@ -307,24 +315,22 @@ namespace LoadFoxProDBToSQL
                         NpgsqlCommand createCmd = conn.CreateCommand();
                         createCmd.CommandText = createSql;
                         createCmd.ExecuteNonQuery();
-                        createCmd.Dispose();
                     }
                 }
                 catch (SqlException ex)
                 {
                     //lbMessages.Items.Add("Sql Exception:" + ex.Message + ", Stack Trace:" + ex.StackTrace + " for tablename: " + tableName + " sql statement " + createSql);
-                    _messageBuilder.Append("Sql Exception:" + ex.Message + ", Stack Trace:" + ex.StackTrace + " for tablename: " + tableName + " sql statement " + createSql);
+                    _messageBuilder.Append("Sql Exception:" + ex.Message + ", Stack Trace:" + ex.StackTrace + " for tablename: " + tableName + " sql statement " + createSql + Environment.NewLine);
                     messageBox.Text = _messageBuilder.ToString();
                 }
                 catch (Exception ex2)
                 {
-                    _messageBuilder.Append("Create Table Error:" + ex2.Message + ", Stack Trace:" + ex2.StackTrace + " for tablename: " + tableName + " sql statement " + createSql);
+                    _messageBuilder.Append("Create Table Error:" + ex2.Message + ", Stack Trace:" + ex2.StackTrace + " for tablename: " + tableName + " sql statement " + createSql + Environment.NewLine);
                     messageBox.Text = _messageBuilder.ToString();
                 }
                 conn.Close();
-                conn.Dispose();
             }
-            _messageBuilder.Append($"Table {tableName} created successfully.");
+            _messageBuilder.Append($"Table {tableName} created successfully." + Environment.NewLine);
             messageBox.Text = _messageBuilder.ToString();
         }
 
@@ -332,7 +338,7 @@ namespace LoadFoxProDBToSQL
         {
             var conn = _dbConnection;
             //lbMessages.Items.Add("Create table Started for Table: {dataTable.TableName}");
-            _messageBuilder.Append($"Create table Started for Table: {tableName}");
+            _messageBuilder.Append($"Create table Started for Table: {tableName}" + Environment.NewLine);
             messageBox.Text = _messageBuilder.ToString();
             if (conn.State != ConnectionState.Open)
             {
@@ -348,23 +354,21 @@ namespace LoadFoxProDBToSQL
                     SqlCommand createCmd = (SqlCommand)_dbConnection.CreateCommand();
                     createCmd.CommandText = createSql;
                     createCmd.ExecuteNonQuery();
-                    createCmd.Dispose();
                 }
             }
             catch (SqlException ex)
             {
-                _messageBuilder.Append("Sql Exception:" + ex.Message + ", Stack Trace:" + ex.StackTrace + " for tablename: " + tableName + " sql statement " + createSql);
+                _messageBuilder.Append("Sql Exception:" + ex.Message + ", Stack Trace:" + ex.StackTrace + " for tablename: " + tableName + " sql statement " + createSql + Environment.NewLine);
                 messageBox.Text = _messageBuilder.ToString();
             }
             catch (Exception ex2)
             {
-                _messageBuilder.Append("Create Table Error:" + ex2.Message + ", Stack Trace:" + ex2.StackTrace + " for tablename: " + tableName + " sql statement " + createSql);
+                _messageBuilder.Append("Create Table Error:" + ex2.Message + ", Stack Trace:" + ex2.StackTrace + " for tablename: " + tableName + " sql statement " + createSql + Environment.NewLine);
                 messageBox.Text = _messageBuilder.ToString();
             }
             conn.Close();
-            conn.Dispose();
 
-            _messageBuilder.Append($"Table {tableName} created successfully.");
+            _messageBuilder.Append($"Table {tableName} created successfully." + Environment.NewLine);
             messageBox.Text = _messageBuilder.ToString();
         }
 
@@ -460,10 +464,10 @@ namespace LoadFoxProDBToSQL
         private void InsertData(OleDbDataReader dataReader, DataTable columns, string connString, string tableName)
         {
 
-            _messageBuilder.Append("Insert Data started for Table: " + tableName);
+            _messageBuilder.Append("Insert Data started for Table: " + tableName + Environment.NewLine);
             messageBox.Text = _messageBuilder.ToString();
 
-            DbConnection conn = _dbConnection;
+            DbConnection conn = GetDbConnection(connString);
 
             StringBuilder sb = new StringBuilder();
 
@@ -503,29 +507,27 @@ namespace LoadFoxProDBToSQL
                             bulk.UseRowsAffected = true;
 
                             bulk.BulkInsert();
-                        _messageBuilder.Append("Rows Inserted:" + bulk.ResultInfo.RowsAffectedInserted);
+                        _messageBuilder.Append("Rows Inserted:" + bulk.ResultInfo.RowsAffectedInserted + Environment.NewLine);
                         messageBox.Text = _messageBuilder.ToString();
 
 
-                        _messageBuilder.Append("Insert Data Completed Successfully for Table: " + tableName);
+                        _messageBuilder.Append("Insert Data Completed Successfully for Table: " + tableName + Environment.NewLine);
                         messageBox.Text = _messageBuilder.ToString();
                     }
                         catch (SqlException ex)
                         {
-                        _messageBuilder.Append($"LogDump:{ sb.ToString()}");
-                        _messageBuilder.Append("SQL Exception:" + ex.Message + ", Stack Trace:" + ex.StackTrace);
+                        _messageBuilder.Append($"LogDump:{ sb.ToString()}" + Environment.NewLine);
+                        _messageBuilder.Append("SQL Exception:" + ex.Message + ", Stack Trace:" + ex.StackTrace + Environment.NewLine);
                         messageBox.Text = _messageBuilder.ToString();
 
                     }
                         catch (Exception ex2)
                         {
-                        _messageBuilder.Append($"LogDump:{ sb.ToString()}");
-                        _messageBuilder.Append("SQL Exception:" + ex2.Message + ", Stack Trace:" + ex2.StackTrace);
+                        _messageBuilder.Append($"LogDump:{ sb.ToString()}" + Environment.NewLine);
+                        _messageBuilder.Append("SQL Exception:" + ex2.Message + ", Stack Trace:" + ex2.StackTrace + Environment.NewLine);
                         messageBox.Text = _messageBuilder.ToString();
                     }
                         conn.Close();
-                        conn.Dispose();
-
                     }
                 }
 
@@ -642,6 +644,8 @@ namespace LoadFoxProDBToSQL
             foreach (var row in dataTable.AsEnumerable().OrderBy(x=> x.ItemArray[6]))
             {
                 var columnName = row[3].ToString();
+                if (!_isFoxPro)
+                    columnName = '[' + columnName.ToString() + ']'; 
                 var dataTypeString = row[11].ToString();
                 var maxLength = row[13].ToString();
                 var precision = row[15].ToString();
@@ -650,23 +654,24 @@ namespace LoadFoxProDBToSQL
                 //var dataType = _isDbase ? GetDBaseDataType(dataTypeString, maxLength, precision, scale) :
                 //    GetFoxProDataType(dataTypeString, maxLength, precision, scale);
 
-                string primKey = "";
                 if (i == 1 && dataTable.Rows.Count > 1)
                 {
-                    sqlSelect = $"Select [{columnName.ToString().Trim()}] , ";
+                    sqlSelect = $"Select {columnName.ToString().Trim()} , ";
                 }
                 else if (i == 1 && dataTable.Rows.Count == 1)
                 {
-                    sqlSelect = $"Select [{columnName.ToString().Trim()}] FROM [{tableName.ToString()}] ";
+                    sqlSelect = $"Select {columnName.ToString().Trim()} FROM {tableName.ToString()} ";
                 }
                 else if (i == dataTable.Rows.Count)
-                    sqlSelect = sqlSelect + $" [{columnName.ToString().Trim()}]  FROM [{tableName.ToString()}] ";
+                    sqlSelect = sqlSelect + $" {columnName.ToString().Trim()}  FROM {tableName.ToString()} ";
                 else
-                    sqlSelect = sqlSelect + $" [{columnName.ToString().Trim()}], ";
+                    sqlSelect = sqlSelect + $" {columnName.ToString().Trim()}, ";
                 i++;
             }
             return sqlSelect;
         }
+
+
         private static string GetDataType(string dataType, string maxLength, string precision = "0", int scale = 0)
         {
             //254 is the max length of a column on FoxPro
