@@ -1,0 +1,10 @@
+C:\repos\LoadFoxProDBToSQL\bin\Debug\LoadFoxProDBToSQL.exe.config
+C:\repos\LoadFoxProDBToSQL\bin\Debug\LoadFoxProDBToSQL.exe
+C:\repos\LoadFoxProDBToSQL\bin\Debug\LoadFoxProDBToSQL.pdb
+C:\repos\LoadFoxProDBToSQL\obj\Debug\LoadFoxProDBToSQL.csprojAssemblyReference.cache
+C:\repos\LoadFoxProDBToSQL\obj\Debug\LoadFoxProDBToSQL.Form1.resources
+C:\repos\LoadFoxProDBToSQL\obj\Debug\LoadFoxProDBToSQL.Properties.Resources.resources
+C:\repos\LoadFoxProDBToSQL\obj\Debug\LoadFoxProDBToSQL.csproj.GenerateResource.cache
+C:\repos\LoadFoxProDBToSQL\obj\Debug\LoadFoxProDBToSQL.csproj.CoreCompileInputs.cache
+C:\repos\LoadFoxProDBToSQL\obj\Debug\LoadFoxProDBToSQL.exe
+C:\repos\LoadFoxProDBToSQL\obj\Debug\LoadFoxProDBToSQL.pdb

@@ -55,27 +55,27 @@
             // DBFLabel
             // 
             this.DBFLabel.AutoSize = true;
-            this.DBFLabel.Location = new System.Drawing.Point(14, 58);
-            this.DBFLabel.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.DBFLabel.Location = new System.Drawing.Point(30, 107);
+            this.DBFLabel.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.DBFLabel.Name = "DBFLabel";
-            this.DBFLabel.Size = new System.Drawing.Size(138, 20);
+            this.DBFLabel.Size = new System.Drawing.Size(274, 37);
             this.DBFLabel.TabIndex = 0;
             this.DBFLabel.Text = "DBF /DB Location";
             // 
             // dbPath
             // 
-            this.dbPath.Location = new System.Drawing.Point(156, 58);
-            this.dbPath.Margin = new System.Windows.Forms.Padding(2);
+            this.dbPath.Location = new System.Drawing.Point(329, 107);
+            this.dbPath.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.dbPath.Name = "dbPath";
-            this.dbPath.Size = new System.Drawing.Size(815, 26);
+            this.dbPath.Size = new System.Drawing.Size(1716, 44);
             this.dbPath.TabIndex = 1;
             // 
             // selectFolder
             // 
-            this.selectFolder.Location = new System.Drawing.Point(986, 51);
-            this.selectFolder.Margin = new System.Windows.Forms.Padding(2);
+            this.selectFolder.Location = new System.Drawing.Point(2082, 94);
+            this.selectFolder.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.selectFolder.Name = "selectFolder";
-            this.selectFolder.Size = new System.Drawing.Size(124, 40);
+            this.selectFolder.Size = new System.Drawing.Size(262, 74);
             this.selectFolder.TabIndex = 2;
             this.selectFolder.Text = "Select Folder";
             this.selectFolder.UseVisualStyleBackColor = true;
@@ -84,85 +84,84 @@
             // sqlServerLabel
             // 
             this.sqlServerLabel.AutoSize = true;
-            this.sqlServerLabel.Location = new System.Drawing.Point(20, 107);
-            this.sqlServerLabel.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.sqlServerLabel.Location = new System.Drawing.Point(42, 198);
+            this.sqlServerLabel.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.sqlServerLabel.Name = "sqlServerLabel";
-            this.sqlServerLabel.Size = new System.Drawing.Size(101, 20);
+            this.sqlServerLabel.Size = new System.Drawing.Size(204, 37);
             this.sqlServerLabel.TabIndex = 3;
             this.sqlServerLabel.Text = "Server Name";
             // 
             // serverName
             // 
-            this.serverName.Location = new System.Drawing.Point(156, 104);
-            this.serverName.Margin = new System.Windows.Forms.Padding(2);
+            this.serverName.Location = new System.Drawing.Point(329, 192);
+            this.serverName.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.serverName.Name = "serverName";
-            this.serverName.Size = new System.Drawing.Size(815, 26);
+            this.serverName.Size = new System.Drawing.Size(1716, 44);
             this.serverName.TabIndex = 4;
-            this.serverName.Text = "pg2.bitwerx.com";
+            this.serverName.Text = "server address";
             // 
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(20, 146);
-            this.label1.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.label1.Location = new System.Drawing.Point(42, 270);
+            this.label1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(85, 20);
+            this.label1.Size = new System.Drawing.Size(170, 37);
             this.label1.TabIndex = 5;
             this.label1.Text = "UserName";
             // 
             // sqlUserName
             // 
-            this.sqlUserName.Location = new System.Drawing.Point(156, 146);
-            this.sqlUserName.Margin = new System.Windows.Forms.Padding(2);
+            this.sqlUserName.Location = new System.Drawing.Point(329, 270);
+            this.sqlUserName.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.sqlUserName.Name = "sqlUserName";
-            this.sqlUserName.Size = new System.Drawing.Size(815, 26);
+            this.sqlUserName.Size = new System.Drawing.Size(1716, 44);
             this.sqlUserName.TabIndex = 6;
-            this.sqlUserName.Text = "postgres";
+            this.sqlUserName.Text = "username";
             // 
             // sqlPasswordLabel
             // 
             this.sqlPasswordLabel.AutoSize = true;
-            this.sqlPasswordLabel.Location = new System.Drawing.Point(20, 188);
-            this.sqlPasswordLabel.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.sqlPasswordLabel.Location = new System.Drawing.Point(42, 348);
+            this.sqlPasswordLabel.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.sqlPasswordLabel.Name = "sqlPasswordLabel";
-            this.sqlPasswordLabel.Size = new System.Drawing.Size(78, 20);
+            this.sqlPasswordLabel.Size = new System.Drawing.Size(158, 37);
             this.sqlPasswordLabel.TabIndex = 7;
             this.sqlPasswordLabel.Text = "Password";
             // 
             // sqlPassword
             // 
-            this.sqlPassword.Location = new System.Drawing.Point(156, 186);
-            this.sqlPassword.Margin = new System.Windows.Forms.Padding(2);
+            this.sqlPassword.Location = new System.Drawing.Point(329, 344);
+            this.sqlPassword.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.sqlPassword.Name = "sqlPassword";
-            this.sqlPassword.Size = new System.Drawing.Size(815, 26);
+            this.sqlPassword.Size = new System.Drawing.Size(1716, 44);
             this.sqlPassword.TabIndex = 8;
-            this.sqlPassword.Text = "KjpQ}A#V}Lku)HZWx%-L7i.B";
             this.sqlPassword.UseSystemPasswordChar = true;
             // 
             // sqlDBLabel
             // 
             this.sqlDBLabel.AutoSize = true;
-            this.sqlDBLabel.Location = new System.Drawing.Point(19, 229);
-            this.sqlDBLabel.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.sqlDBLabel.Location = new System.Drawing.Point(40, 424);
+            this.sqlDBLabel.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.sqlDBLabel.Name = "sqlDBLabel";
-            this.sqlDBLabel.Size = new System.Drawing.Size(116, 20);
+            this.sqlDBLabel.Size = new System.Drawing.Size(230, 37);
             this.sqlDBLabel.TabIndex = 9;
             this.sqlDBLabel.Text = "Dest DB Name";
             // 
             // newSQLDBName
             // 
-            this.newSQLDBName.Location = new System.Drawing.Point(156, 229);
-            this.newSQLDBName.Margin = new System.Windows.Forms.Padding(2);
+            this.newSQLDBName.Location = new System.Drawing.Point(329, 424);
+            this.newSQLDBName.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.newSQLDBName.Name = "newSQLDBName";
-            this.newSQLDBName.Size = new System.Drawing.Size(815, 26);
+            this.newSQLDBName.Size = new System.Drawing.Size(1716, 44);
             this.newSQLDBName.TabIndex = 10;
             // 
             // startButton
             // 
-            this.startButton.Location = new System.Drawing.Point(996, 223);
-            this.startButton.Margin = new System.Windows.Forms.Padding(2);
+            this.startButton.Location = new System.Drawing.Point(2103, 413);
+            this.startButton.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.startButton.Name = "startButton";
-            this.startButton.Size = new System.Drawing.Size(124, 38);
+            this.startButton.Size = new System.Drawing.Size(262, 70);
             this.startButton.TabIndex = 11;
             this.startButton.Text = "Start";
             this.startButton.UseVisualStyleBackColor = true;
@@ -173,9 +172,11 @@
             this.groupBox1.Controls.Add(this.accessButton);
             this.groupBox1.Controls.Add(this.foxProButton1);
             this.groupBox1.Controls.Add(this.dbaseButton1);
-            this.groupBox1.Location = new System.Drawing.Point(24, 3);
+            this.groupBox1.Location = new System.Drawing.Point(51, 6);
+            this.groupBox1.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(417, 50);
+            this.groupBox1.Padding = new System.Windows.Forms.Padding(6, 6, 6, 6);
+            this.groupBox1.Size = new System.Drawing.Size(880, 93);
             this.groupBox1.TabIndex = 13;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Source Data Type";
@@ -183,9 +184,10 @@
             // accessButton
             // 
             this.accessButton.AutoSize = true;
-            this.accessButton.Location = new System.Drawing.Point(271, 19);
+            this.accessButton.Location = new System.Drawing.Point(572, 35);
+            this.accessButton.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
             this.accessButton.Name = "accessButton";
-            this.accessButton.Size = new System.Drawing.Size(113, 24);
+            this.accessButton.Size = new System.Drawing.Size(217, 41);
             this.accessButton.TabIndex = 3;
             this.accessButton.TabStop = true;
             this.accessButton.Text = "Access DB";
@@ -195,9 +197,10 @@
             // foxProButton1
             // 
             this.foxProButton1.AutoSize = true;
-            this.foxProButton1.Location = new System.Drawing.Point(143, 20);
+            this.foxProButton1.Location = new System.Drawing.Point(302, 37);
+            this.foxProButton1.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
             this.foxProButton1.Name = "foxProButton1";
-            this.foxProButton1.Size = new System.Drawing.Size(121, 24);
+            this.foxProButton1.Size = new System.Drawing.Size(237, 41);
             this.foxProButton1.TabIndex = 2;
             this.foxProButton1.TabStop = true;
             this.foxProButton1.Text = "FoxPro DBF";
@@ -207,9 +210,10 @@
             // dbaseButton1
             // 
             this.dbaseButton1.AutoSize = true;
-            this.dbaseButton1.Location = new System.Drawing.Point(16, 20);
+            this.dbaseButton1.Location = new System.Drawing.Point(34, 37);
+            this.dbaseButton1.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
             this.dbaseButton1.Name = "dbaseButton1";
-            this.dbaseButton1.Size = new System.Drawing.Size(118, 24);
+            this.dbaseButton1.Size = new System.Drawing.Size(226, 41);
             this.dbaseButton1.TabIndex = 0;
             this.dbaseButton1.TabStop = true;
             this.dbaseButton1.Text = "Dbase DBF";
@@ -219,9 +223,10 @@
             // serverButton1
             // 
             this.serverButton1.AutoSize = true;
-            this.serverButton1.Location = new System.Drawing.Point(6, 20);
+            this.serverButton1.Location = new System.Drawing.Point(13, 37);
+            this.serverButton1.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
             this.serverButton1.Name = "serverButton1";
-            this.serverButton1.Size = new System.Drawing.Size(116, 24);
+            this.serverButton1.Size = new System.Drawing.Size(226, 41);
             this.serverButton1.TabIndex = 14;
             this.serverButton1.TabStop = true;
             this.serverButton1.Text = "SQL Server";
@@ -230,9 +235,10 @@
             // serverButton2
             // 
             this.serverButton2.AutoSize = true;
-            this.serverButton2.Location = new System.Drawing.Point(199, 20);
+            this.serverButton2.Location = new System.Drawing.Point(420, 37);
+            this.serverButton2.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
             this.serverButton2.Name = "serverButton2";
-            this.serverButton2.Size = new System.Drawing.Size(112, 24);
+            this.serverButton2.Size = new System.Drawing.Size(217, 41);
             this.serverButton2.TabIndex = 15;
             this.serverButton2.TabStop = true;
             this.serverButton2.Text = "PostreSQL";
@@ -242,29 +248,32 @@
             // 
             this.serverBox.Controls.Add(this.serverButton1);
             this.serverBox.Controls.Add(this.serverButton2);
-            this.serverBox.Location = new System.Drawing.Point(596, 3);
+            this.serverBox.Location = new System.Drawing.Point(1258, 6);
+            this.serverBox.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
             this.serverBox.Name = "serverBox";
-            this.serverBox.Size = new System.Drawing.Size(375, 50);
+            this.serverBox.Padding = new System.Windows.Forms.Padding(6, 6, 6, 6);
+            this.serverBox.Size = new System.Drawing.Size(792, 93);
             this.serverBox.TabIndex = 16;
             this.serverBox.TabStop = false;
             this.serverBox.Text = "Destination Server Type";
             // 
             // messageBox
             // 
-            this.messageBox.Location = new System.Drawing.Point(14, 266);
+            this.messageBox.Location = new System.Drawing.Point(30, 492);
+            this.messageBox.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
             this.messageBox.Name = "messageBox";
             this.messageBox.ReadOnly = true;
             this.messageBox.RightToLeft = System.Windows.Forms.RightToLeft.No;
             this.messageBox.ShortcutsEnabled = false;
-            this.messageBox.Size = new System.Drawing.Size(1369, 385);
+            this.messageBox.Size = new System.Drawing.Size(2886, 709);
             this.messageBox.TabIndex = 17;
             this.messageBox.Text = "";
             // 
             // Form1
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(19F, 37F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1395, 749);
+            this.ClientSize = new System.Drawing.Size(2945, 1386);
             this.Controls.Add(this.messageBox);
             this.Controls.Add(this.serverBox);
             this.Controls.Add(this.groupBox1);
@@ -280,9 +289,9 @@
             this.Controls.Add(this.selectFolder);
             this.Controls.Add(this.dbPath);
             this.Controls.Add(this.DBFLabel);
-            this.Margin = new System.Windows.Forms.Padding(2);
+            this.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.Name = "Form1";
-            this.Text = "MainForm";
+            this.Text = "UpdatedDataLoader";
             this.Load += new System.EventHandler(this.Form1_Load);
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
